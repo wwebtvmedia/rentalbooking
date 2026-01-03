@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.txt
+    container_name: backend
+    restart: always
+    env_file: .env
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.txt
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  mcp-client:
+    build:
+      context: ./mcp-client
+      dockerfile: Dockerfile.txt
+    container_name: mcp-client
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+volumes:
+  mongo_data:

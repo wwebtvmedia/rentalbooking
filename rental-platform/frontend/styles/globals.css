@@ -1,0 +1,47 @@
+html, body, #__next {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+.container {
+  padding: 1rem;
+}
+
+/* header */
+.site-header {
+  background: #0b67c2;
+  color: white;
+}
+.site-header .site-header-inner {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0.5rem 1rem;
+}
+.site-header .brand { margin:0; font-size:1.1rem; }
+.site-header .nav select { margin-right: 1rem; }
+.site-header .nav .login { color: white; text-decoration: underline; }
+
+/* modal */
+.modal-overlay {
+  position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+.modal { background:white;padding:1rem;border-radius:6px;max-width:420px;width:100%; }
+.modal label { display:block;margin-top:0.5rem }
+.modal input { width:100%; padding:0.5rem; margin-top:0.25rem }
+.modal .modal-actions { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem }
+.button { padding:0.5rem 0.8rem; border-radius:4px; border:1px solid #ccc; background:#f6f6f6 }
+.button.primary { background:#0b67c2; color:white; border-color:#094a86 }
+.button.secondary { background:#eee }
+
+/* toast */
+.toast { margin-left:1rem; background:#223; color:#fff; padding:0.3rem 0.6rem; border-radius:4px }
+
+/* responsive */
+@media (max-width: 700px) {
+  .calendar-wrap { padding: 0 0.5rem }
+  .site-header .site-header-inner { flex-direction:column; align-items:flex-start }
+}
+
