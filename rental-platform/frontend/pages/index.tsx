@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 
-const APARTMENTS = [
+// fallback static apartments (used if API is unavailable)
+const FALLBACK_APARTMENTS = [
   { id: 'apt1', name: 'Sea View Apartment', lat: 51.5074, lon: -0.1278, description: 'Bright two-bedroom with sea view.' },
   { id: 'apt2', name: 'City Center Loft', lat: 51.5155, lon: -0.0922, description: 'Stylish loft in the heart of the city.' },
   { id: 'apt3', name: 'Quiet Garden Flat', lat: 51.5033, lon: -0.1195, description: 'Cozy flat overlooking a private garden.' }
 ];
+
 
 export default function Home() {
   const router = useRouter();
@@ -14,6 +16,20 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  const [apartments, setApartments] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const res = await axios.get(`${base}/apartments`);
+        setApartments(res.data);
+      } catch (err) {
+        setApartments(FALLBACK_APARTMENTS);
+      }
+    };
+    fetch();
+  }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem('guest');
@@ -28,9 +44,10 @@ export default function Home() {
   const handleCreate = async () => {
     if (!fullName || !email) return alert('Name and email required');
     try {
-      const res = await axios.post('http://localhost:4000/customers', { fullName, email });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const res = await axios.post(`${base}/customers`, { fullName, email });
       // automatically login (get token)
-      const login = await axios.post('http://localhost:4000/auth/login', { email: res.data.email, name: res.data.fullName });
+      const login = await axios.post(`${base}/auth/login`, { email: res.data.email, name: res.data.fullName });
       saveGuest(res.data);
       localStorage.setItem('token', login.data.token);
       alert('Guest created and logged in');
@@ -43,11 +60,12 @@ export default function Home() {
     if (!email) return alert('Email required');
     try {
       // prefer magic-link flow
-      const res = await axios.post('http://localhost:4000/auth/magic', { email, redirectUrl: window.location.origin + '/magic-callback' });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const res = await axios.post(`${base}/auth/magic`, { email, redirectUrl: window.location.origin + '/magic-callback' });
       // in dev/test the server may return the token directly; otherwise the link will be emailed / logged
       if (res.data?.token) {
         // exchange immediately
-        const verify = await axios.post('http://localhost:4000/auth/magic/verify', { token: res.data.token });
+        const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
         saveGuest(verify.data.user);
         localStorage.setItem('token', verify.data.token);
         alert('Logged in (magic link exchanged)');
@@ -106,11 +124,12 @@ export default function Home() {
           <h2 style={{ marginTop: 20 }}>Choose an apartment</h2>
           <div style={{ display: 'flex', gap: 20 }}>
             <div style={{ minWidth: 300 }}>
-              {APARTMENTS.map((a) => (
-                <div key={a.id} style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer', background: selected?.id === a.id ? '#f0f8ff' : 'white' }} onClick={() => selectApartment(a)}>
+              {apartments.map((a) => (
+                <div key={a.id || a._id || a.name} style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer', background: selected?.id === (a.id || a._id) ? '#f0f8ff' : 'white' }} onClick={() => selectApartment({ id: a.id || a._id, name: a.name, lat: a.lat, lon: a.lon, description: a.description, pricePerNight: a.pricePerNight, photos: a.photos, rules: a.rules })}>
                   <h3 style={{ margin: '0 0 4px 0' }}>{a.name}</h3>
                   <div style={{ fontSize: 14 }}>{a.description}</div>
                   <div style={{ fontSize: 12, color: '#666' }}>Lat: {a.lat}, Lon: {a.lon}</div>
+                  {a.pricePerNight !== undefined && <div style={{ fontSize: 12, color: '#333' }}>Price/night: ${a.pricePerNight}</div>}
                 </div>
               ))}
             </div>

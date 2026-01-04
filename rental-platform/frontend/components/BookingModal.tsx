@@ -4,11 +4,12 @@ type Props = {
   open: boolean;
   start?: string;
   end?: string;
+  apartment?: any;
   onClose: () => void;
   onSubmit: (payload: { start: string; end: string; name: string; email: string }) => Promise<void>;
 };
 
-export default function BookingModal({ open, start, end, onClose, onSubmit }: Props) {
+export default function BookingModal({ open, start, end, apartment, onClose, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,17 @@ export default function BookingModal({ open, start, end, onClose, onSubmit }: Pr
           <strong>Start:</strong> {start} <br />
           <strong>End:</strong> {end}
         </p>
+        {apartment && (
+          <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+            {apartment.photos && apartment.photos.length > 0 && <img src={apartment.photos[0]} alt="photo" style={{ width: 120, height: 80, objectFit: 'cover' }} />}
+            <div>
+              <div><strong>{apartment.name}</strong></div>
+              <div>{apartment.description}</div>
+              <div style={{ marginTop: 6 }}><strong>Price/night:</strong> ${apartment.pricePerNight}</div>
+              {apartment.rules && <div style={{ marginTop: 6 }}><strong>Rules:</strong> {apartment.rules}</div>}
+            </div>
+          </div>
+        )}
         <label>
           Name
           <input value={name} onChange={(e) => setName(e.target.value)} />

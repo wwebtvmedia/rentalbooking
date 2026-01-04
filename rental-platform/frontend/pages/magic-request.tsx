@@ -8,7 +8,8 @@ export default function MagicRequest() {
   const handleSend = async () => {
     if (!email) return alert('Email required');
     try {
-      await axios.post('http://localhost:4000/auth/magic', { email, redirectUrl: window.location.origin + '/magic-callback' });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      await axios.post(`${base}/auth/magic`, { email, redirectUrl: window.location.origin + '/magic-callback' });
       setSent(true);
     } catch (err: any) {
       alert(err.response?.data?.error || err.message);

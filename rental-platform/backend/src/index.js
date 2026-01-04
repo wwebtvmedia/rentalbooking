@@ -14,6 +14,10 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true }));
 app.use(express.json());
 
+// serve uploaded files
+import path from 'path';
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 const PORT = process.env.PORT || 4000;
 
 mongoose.connect(process.env.MONGO_URI)
@@ -30,6 +34,8 @@ app.use("/bookings", bookingRoutes);
 app.use("/availabilities", availabilityRoutes);
 app.use("/calendar", calendarRoutes);
 app.use('/auth', authRoutes);
+app.use('/apartments', (await import('./routes/apartments.js')).default);
+app.use('/uploads', (await import('./routes/uploads.js')).default);
 
 app.listen(PORT, () => {
   logger.info(`Backend running on port ${PORT}`);

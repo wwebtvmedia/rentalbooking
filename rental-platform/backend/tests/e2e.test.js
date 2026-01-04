@@ -145,6 +145,21 @@ describe('E2E non-regression tests', () => {
     expect(del.body.ok).toBe(true);
   });
 
+  test('admin can create an apartment', async () => {
+    // first upload a small image
+    const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+    // If multer not installed, the uploads endpoint accepts JSON fallback { filename, b64 }
+    const up = await request.post('/uploads').send({ filename: 'photo.png', b64: pngB64 }).expect(200);
+    expect(up.body.url).toBeTruthy();
+
+    const payload = { name: 'E2E Apartment', description: 'Test apartment', photos: [up.body.url], pricePerNight: 120, rules: 'No smoking', lat: 51.5, lon: -0.1 };
+    const res = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send(payload).expect(201);
+    expect(res.body._id).toBeTruthy();
+    const list = await request.get('/apartments').expect(200);
+    const found = list.body.some(a => a._id === res.body._id);
+    expect(found).toBe(true);
+  });
+
   test('calendar filtering returns only apartment events', async () => {
     // create a booking for other apartment
     const start = new Date(Date.now() + 72*3600*1000).toISOString();

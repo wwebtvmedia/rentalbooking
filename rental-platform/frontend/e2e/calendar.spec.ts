@@ -17,9 +17,10 @@ test('can open booking modal and submit booking', async ({ page }) => {
   });
 
   await page.goto('/calendar');
-  await expect(page.locator('text=Calendar')).toBeVisible();
+  await expect(page.locator('text=Calendar')).toBeVisible({ timeout: 10000 });
 
-  // open modal using the New booking button
+  // open modal using the New booking button (wait for the button to appear)
+  await expect(page.locator('text=New booking')).toBeVisible({ timeout: 10000 });
   await page.click('text=New booking');
   await page.fill('label:has-text("Name") input', 'Test Guest');
   await page.fill('label:has-text("Email") input', 'test@example.com');

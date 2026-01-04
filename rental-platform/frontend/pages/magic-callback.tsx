@@ -10,7 +10,8 @@ export default function MagicCallback() {
       const token = router.query.token as string | undefined;
       if (!token) return;
       try {
-        const res = await axios.post('http://localhost:4000/auth/magic/verify', { token });
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const res = await axios.post(`${base}/auth/magic/verify`, { token });
         if (res.data.token) {
           localStorage.setItem('token', res.data.token);
           localStorage.setItem('guest', JSON.stringify(res.data.user));

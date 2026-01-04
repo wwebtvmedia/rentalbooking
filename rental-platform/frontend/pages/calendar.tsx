@@ -16,13 +16,28 @@ const CalendarPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRange, setModalRange] = useState<{ start?: string; end?: string }>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [apartment, setApartment] = useState<any>(null);
 
+  useEffect(() => {
+    const fetchApartment = async () => {
+      if (!apartmentId) return setApartment(null);
+      try {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const res = await axios.get(`${base}/apartments/${apartmentId}`);
+        setApartment(res.data);
+      } catch (err) {
+        setApartment(null);
+      }
+    };
+    fetchApartment();
+  }, [apartmentId]);
   const fetchEvents = async (start?: string, end?: string) => {
     const params: any = {};
     if (apartmentId) params.apartmentId = apartmentId;
     if (start) params.from = start;
     if (end) params.to = end;
-    const res = await axios.get('http://localhost:4000/calendar/events', { params });
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+    const res = await axios.get(`${base}/calendar/events`, { params });
     setEvents(res.data);
   };
 
@@ -41,7 +56,8 @@ const CalendarPage = () => {
       const token = localStorage.getItem('token');
       const headers: any = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      await axios.post('http://localhost:4000/bookings', {
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      await axios.post(`${base}/bookings`, {
         fullName: payload.name,
         email: payload.email,
         apartmentId,
@@ -60,12 +76,27 @@ const CalendarPage = () => {
 
   const handleEventClick = async (clickInfo: any) => {
     const ext = clickInfo.event.extendedProps;
+
+    // show apartment info if available
+    if (ext.apartment) {
+      const apt = ext.apartment;
+      const info = `${apt.name}\nPrice/night: $${apt.pricePerNight || 0}\n${apt.description || ''}\nRules: ${apt.rules || ''}`;
+      if (apt.lat && apt.lon) {
+        if (window.confirm(info + '\n\nOpen location in maps?')) {
+          window.open(`https://www.openstreetmap.org/?mlat=${apt.lat}&mlon=${apt.lon}`,'_blank');
+        }
+      } else {
+        alert(info);
+      }
+    }
+
     if (ext.type === 'availability') {
       // admins can delete blocked slots via prompt
       const token = window.prompt('Admin token to modify slot (leave blank to cancel)');
       if (!token) return;
       try {
-        await axios.delete(`http://localhost:4000/availabilities/${ext.availId}`, {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        await axios.delete(`${base}/availabilities/${ext.availId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         alert('Availability removed');
@@ -81,7 +112,8 @@ const CalendarPage = () => {
         const token = localStorage.getItem('token');
         const headers: any = {};
         if (token) headers.Authorization = `Bearer ${token}`;
-        await axios.post(`http://localhost:4000/bookings/${ext.bookingId}/cancel`, {}, { headers });
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        await axios.post(`${base}/bookings/${ext.bookingId}/cancel`, {}, { headers });
         alert('Booking cancelled');
         fetchEvents();
       } catch (err: any) {
@@ -128,6 +160,7 @@ const CalendarPage = () => {
         open={modalOpen}
         start={modalRange.start}
         end={modalRange.end}
+        apartment={apartment}
         onClose={() => setModalOpen(false)}
         onSubmit={createBooking}
       />
