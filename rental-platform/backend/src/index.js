@@ -37,6 +37,13 @@ app.use('/auth', authRoutes);
 app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 
+// Payments and webhooks
+app.use('/payments', (await import('./routes/payments.js')).default);
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const { stripeWebhookHandler } = await import('./routes/webhooks.js');
+  return stripeWebhookHandler(req, res);
+});
+
 app.listen(PORT, () => {
   logger.info(`Backend running on port ${PORT}`);
 });

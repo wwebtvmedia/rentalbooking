@@ -7,7 +7,9 @@ const ApartmentSchema = new mongoose.Schema({
   pricePerNight: { type: Number, default: 0 },
   rules: { type: String, default: '' },
   lat: { type: Number },
-  lon: { type: Number }
+  lon: { type: Number },
+  // Fixed deposit amount in cents (optional). If set, this is charged as the guarantee deposit when booking.
+  depositAmount: { type: Number } 
 }, { timestamps: true });
 
 export default mongoose.model('Apartment', ApartmentSchema);

@@ -37,6 +37,24 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 // POST /uploads - accepts multipart form-data file='file' OR JSON { filename, b64 }
 router.post('/', async (req, res, next) => {
+  // If the client is sending JSON, prefer the JSON (base64) fallback regardless of multer availability.
+  if (req.is('application/json')) {
+    const { b64, filename } = req.body || {};
+    if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename in JSON body' });
+    try {
+      const buf = Buffer.from(b64, 'base64');
+      const ext = path.extname(filename) || '.bin';
+      const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      const outPath = path.join(uploadDir, newName);
+      await fs.promises.writeFile(outPath, buf);
+      const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
+      const url = `${origin}/uploads/${newName}`;
+      return res.json({ url, filename: newName });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (multerAvailable && upload) {
     return upload.single('file')(req, res, (err) => {
       if (err) return res.status(400).json({ error: err.message });
@@ -47,10 +65,7 @@ router.post('/', async (req, res, next) => {
     });
   }
 
-  // fallback: accept JSON body with base64 'b64' and 'filename'
-  if (!req.is('application/json')) return res.status(400).json({ error: 'Multipart upload not available and no JSON body provided' });
-  const { b64, filename } = req.body || {};
-  if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename in JSON body' });
+  return res.status(400).json({ error: 'Multipart upload not available and no JSON body provided' });
   try {
     const buf = Buffer.from(b64, 'base64');
     const ext = path.extname(filename) || '.bin';

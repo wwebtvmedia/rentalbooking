@@ -3,7 +3,7 @@ import axios from 'axios';
 
 export default function AdminPage() {
   const [list, setList] = useState<any[]>([]);
-  const [form, setForm] = useState<any>({ name: '', description: '', photos: '', pricePerNight: '', rules: '', lat: '', lon: '' });
+  const [form, setForm] = useState<any>({ name: '', description: '', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' });
   const [msg, setMsg] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
@@ -28,7 +28,7 @@ export default function AdminPage() {
       const token = window.prompt('Admin token');
       if (!token) return setMsg('Admin token required');
       const photosArr = [...(uploadedPhotos || []), ...form.photos.split(',').map((s: string) => s.trim()).filter(Boolean)];
-      const body = { ...form, photos: photosArr, pricePerNight: Number(form.pricePerNight), lat: form.lat ? Number(form.lat) : undefined, lon: form.lon ? Number(form.lon) : undefined };
+      const body = { ...form, photos: photosArr, pricePerNight: Number(form.pricePerNight), depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined, lat: form.lat ? Number(form.lat) : undefined, lon: form.lon ? Number(form.lon) : undefined };
       if (editingId) {
         await axios.put(`${base}/apartments/${editingId}`, body, { headers: { Authorization: `Bearer ${token}` } });
         setMsg('Updated');
@@ -37,7 +37,7 @@ export default function AdminPage() {
         await axios.post(`${base}/apartments`, body, { headers: { Authorization: `Bearer ${token}` } });
         setMsg('Created');
       }
-      setForm({ name: '', description: '', photos: '', pricePerNight: '', rules: '', lat: '', lon: '' });
+      setForm({ name: '', description: '', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' });
       setUploadedPhotos([]);
       fetch();
     } catch (err: any) {
@@ -95,6 +95,7 @@ export default function AdminPage() {
             {uploadedPhotos.map((p) => <img key={p} src={p} style={{ width: 120, height: 80, objectFit: 'cover', marginRight: 8 }} />)}
           </div>
           <label>Price per night<input type="number" value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} /></label>
+          <label>Deposit amount (fixed, USD)<input type="number" value={form.depositAmount} onChange={(e) => setForm({ ...form, depositAmount: e.target.value })} /></label>
           <label>Rules<textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} /></label>
           <label>Latitude<input value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} /></label>
           <label>Longitude<input value={form.lon} onChange={(e) => setForm({ ...form, lon: e.target.value })} /></label>
@@ -112,13 +113,14 @@ export default function AdminPage() {
                   <strong>{a.name}</strong>
                   <div>{a.description}</div>
                   <div>Price/night: ${a.pricePerNight}</div>
+                  <div>Deposit: {a.depositAmount ? `$${a.depositAmount / 100}` : '—'}</div>
                   <div>Rules: {a.rules}</div>
                   {a.photos && a.photos.length > 0 && <img src={a.photos[0]} alt="photo" style={{ width: 160, height: 100, objectFit: 'cover' }} />}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <button onClick={() => {
                     setEditingId(a._id);
-                    setForm({ name: a.name, description: a.description || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
+                    setForm({ name: a.name, description: a.description || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', depositAmount: a.depositAmount ? (a.depositAmount / 100) : '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
                     window.scrollTo(0,0);
                   }}>Edit</button>
                   <button onClick={async () => {

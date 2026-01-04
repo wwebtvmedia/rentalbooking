@@ -57,13 +57,19 @@ const CalendarPage = () => {
       const headers: any = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      await axios.post(`${base}/bookings`, {
+      const resp = await axios.post(`${base}/bookings`, {
         fullName: payload.name,
         email: payload.email,
         apartmentId,
         start: payload.start,
         end: payload.end
       }, { headers });
+      const booking = resp.data;
+      if (booking.depositAmount && booking.depositAmount > 0) {
+        // redirect to payment page to complete deposit
+        window.location.href = `/payments/${booking._id}`;
+        return;
+      }
       setToast('Booking created');
       fetchEvents();
       setTimeout(() => setToast(null), 3000);

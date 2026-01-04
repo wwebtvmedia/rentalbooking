@@ -172,4 +172,21 @@ describe('E2E non-regression tests', () => {
     expect(inA).toBe(false);
     expect(inB).toBe(true);
   });
+
+  test('payments create-intent stub works for booking with deposit', async () => {
+    // create an apartment with a fixed deposit ($75)
+    const up = await request.post('/uploads').send({ filename: 'photo.png', b64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=' }).expect(200);
+    const payload = { name: 'Deposit Apt', description: 'With deposit', photos: [up.body.url], pricePerNight: 50, depositAmount: 75 };
+    const aptRes = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send(payload).expect(201);
+    const aptId = aptRes.body._id;
+
+    // create booking for that apartment
+    const start = new Date(Date.now() + 96*3600*1000).toISOString();
+    const end = new Date(Date.now() + 97*3600*1000).toISOString();
+    const bRes = await request.post('/bookings').send({ fullName: 'Deposit Guest', email: 'dg@e2e.test', apartmentId: aptId, start, end }).expect(201);
+
+    // create intent
+    const pi = await request.post('/payments/create-intent').send({ bookingId: bRes.body._id }).expect(200);
+    expect(pi.body.paymentIntentId).toBeTruthy();
+  });
 });

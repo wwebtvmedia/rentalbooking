@@ -167,6 +167,25 @@ Use a `.env` file or set these in environment:
 
 There is a `.env.example` with suggested variables in the repository.
 
+## Stripe payments (booking deposit)
+
+- New env variables in `backend/.env.example`:
+  - `STRIPE_SECRET_KEY` - your Stripe secret key (test or live)
+  - `STRIPE_PUBLISHABLE_KEY` - your Stripe publishable key (for frontend)
+  - `STRIPE_WEBHOOK_SECRET` - the webhook signing secret for secure webhook handling
+  - `DEPOSIT_DEFAULT_AMOUNT` - optional default deposit amount in cents (if not set per-apartment)
+
+- Admins can set a fixed deposit amount per apartment in the admin page (`/admin`), entered in USD and stored in cents.
+- The system creates a booking first, then if a deposit is required the user is redirected to `/payments/:bookingId` to complete an embedded Stripe Payment Element flow (or use the dev "Simulate success" button in environments without Stripe client libraries).
+- Deposits are created with `capture_method=manual` so they can be captured later by an admin or released on cancellation (auto-release on cancellation is supported).
+
+### Webhooks
+
+- To verify payment status updates (captures/refunds) the backend exposes `/webhooks/stripe` which accepts Stripe webhook events. Configure your Stripe webhook endpoint to POST to `https://<your-host>/webhooks/stripe` and set the `STRIPE_WEBHOOK_SECRET` env var to the signing secret.
+- In development, you can expose the local server using `ngrok` and point Stripe webhooks to the generated URL.
+
+
+
 ---
 
 ## 🧭 Frontend

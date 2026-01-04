@@ -19,6 +19,17 @@ router.get("/", async (req, res) => {
   res.json(bookings);
 });
 
+// GET /bookings/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const b = await Booking.findById(req.params.id);
+    if (!b) return res.status(404).json({ error: 'Not found' });
+    res.json(b);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create booking (checks conflicts and creates blocking availability)
 // Creating a booking is still allowed to unauthenticated users (public booking).
 router.post("/", async (req, res) => {
@@ -57,6 +68,23 @@ router.post("/", async (req, res) => {
     }
 
     const booking = await Booking.create({ fullName, email, apartmentId, start: s, end: e });
+
+    // Determine deposit amount (use apartment's depositAmount in cents if set, else global default)
+    try {
+      let depositAmount = 0;
+      if (apartmentId) {
+        const Apartment = (await import('../models/Apartment.js')).default;
+        const apt = await Apartment.findById(apartmentId);
+        if (apt && apt.depositAmount) depositAmount = apt.depositAmount;
+      }
+      if (!depositAmount && process.env.DEPOSIT_DEFAULT_AMOUNT) depositAmount = Number(process.env.DEPOSIT_DEFAULT_AMOUNT);
+
+      booking.depositAmount = depositAmount;
+      booking.paymentStatus = depositAmount > 0 ? 'requires_payment_method' : 'none';
+      await booking.save();
+    } catch (err) {
+      console.error('Error determining deposit amount', err);
+    }
 
     // create a blocking availability tied to this booking
     await Availability.create({ start: s, end: e, type: "blocked", bookingId: booking._id, apartmentId, note: "Booked" });

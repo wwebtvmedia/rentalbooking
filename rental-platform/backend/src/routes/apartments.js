@@ -38,7 +38,9 @@ router.post('/', requireRole('admin'), async (req, res) => {
       pricePerNight: Number(req.body.pricePerNight || 0),
       rules: req.body.rules || '',
       lat: req.body.lat ? Number(req.body.lat) : undefined,
-      lon: req.body.lon ? Number(req.body.lon) : undefined
+      lon: req.body.lon ? Number(req.body.lon) : undefined,
+      // depositAmount provided by admin in dollars (e.g., 100), store in cents for precision
+      depositAmount: req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : undefined
     };
     const apt = await Apartment.create(payload);
     res.status(201).json(apt);
@@ -59,6 +61,7 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
     apt.rules = req.body.rules ?? apt.rules;
     apt.lat = req.body.lat !== undefined ? Number(req.body.lat) : apt.lat;
     apt.lon = req.body.lon !== undefined ? Number(req.body.lon) : apt.lon;
+    apt.depositAmount = req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : apt.depositAmount;
     await apt.save();
     res.json(apt);
   } catch (err) {
