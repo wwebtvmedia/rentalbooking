@@ -1,6 +1,7 @@
 import express from 'express';
 import Apartment from '../models/Apartment.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
+import { geocodeAddress } from '../lib/geocoder.js';
 
 const router = express.Router();
 // ensure auth middleware runs so requireRole can read req.user
@@ -28,17 +29,35 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+
+
 // POST /apartments - admin only
 router.post('/', requireRole('admin'), async (req, res) => {
   try {
+    const photos = Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : []);
+    let lat = req.body.lat ? Number(req.body.lat) : undefined;
+    let lon = req.body.lon ? Number(req.body.lon) : undefined;
+    const address = req.body.address || '';
+
+    // if lat/lon missing and address provided, try geocoding
+    if ((lat === undefined || lon === undefined) && address) {
+      const g = await geocodeAddress(address);
+      if (g) {
+        lat = lat === undefined ? g.lat : lat;
+        lon = lon === undefined ? g.lon : lon;
+      }
+    }
+
     const payload = {
       name: req.body.name,
       description: req.body.description || '',
-      photos: Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : []),
+      smallDescription: req.body.smallDescription || '',
+      address,
+      photos,
       pricePerNight: Number(req.body.pricePerNight || 0),
       rules: req.body.rules || '',
-      lat: req.body.lat ? Number(req.body.lat) : undefined,
-      lon: req.body.lon ? Number(req.body.lon) : undefined,
+      lat,
+      lon,
       // depositAmount provided by admin in dollars (e.g., 100), store in cents for precision
       depositAmount: req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : undefined
     };
@@ -56,11 +75,33 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
     if (!apt) return res.status(404).json({ error: 'Not found' });
     apt.name = req.body.name ?? apt.name;
     apt.description = req.body.description ?? apt.description;
+    apt.smallDescription = req.body.smallDescription ?? apt.smallDescription;
+
+    // handle photos
     apt.photos = Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : apt.photos);
+
     apt.pricePerNight = req.body.pricePerNight !== undefined ? Number(req.body.pricePerNight) : apt.pricePerNight;
     apt.rules = req.body.rules ?? apt.rules;
-    apt.lat = req.body.lat !== undefined ? Number(req.body.lat) : apt.lat;
-    apt.lon = req.body.lon !== undefined ? Number(req.body.lon) : apt.lon;
+
+    // address updates: if address changed and no lat/lon provided, attempt geocode
+    const newAddress = req.body.address !== undefined ? req.body.address : apt.address;
+    const latProvided = req.body.lat !== undefined;
+    const lonProvided = req.body.lon !== undefined;
+
+    apt.address = newAddress;
+
+    if (!latProvided && !lonProvided && newAddress) {
+      // try geocode (async)
+      const g = await geocodeAddress(newAddress);
+      if (g) {
+        apt.lat = g.lat;
+        apt.lon = g.lon;
+      }
+    } else {
+      apt.lat = latProvided ? Number(req.body.lat) : apt.lat;
+      apt.lon = lonProvided ? Number(req.body.lon) : apt.lon;
+    }
+
     apt.depositAmount = req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : apt.depositAmount;
     await apt.save();
     res.json(apt);

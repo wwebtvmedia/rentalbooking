@@ -26,7 +26,7 @@ Or run services locally (backend):
 
 ```bash
 cd backend
-npm install
+npm ci
 # use .env or set env variables (see below)
 npm run dev
 ```
@@ -35,7 +35,7 @@ Frontend (local):
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 # then open http://localhost:3000
 ```
@@ -70,6 +70,46 @@ node src/auth/create_token.js --id=admin1 --name=Admin --email=admin@example.com
 ```
 
 Use `Authorization: Bearer <token>` header for admin-only requests.
+
+### Magic link sign-in (passwordless)
+
+You can request a one-time **magic sign-in link** which signs a guest in without a password.
+
+- Request a link: POST `/auth/magic` with JSON body `{ "email": "you@example.com", "redirectUrl": "http://localhost:3000/magic-callback" }`.
+- In production the link is emailed; in development the server **logs the email to the backend console** (look for `MAIL (dev):` or the text `Sign in using this link: <url>`). The frontend also shows the message: "A sign-in link was sent to your email (or logged to console in dev)."
+
+**Example dev console output:**
+
+```text
+MAIL (dev): {
+  "from": "no-reply@example.com",
+  "to": "alice@example.com",
+  "subject": "Your sign-in link",
+  "text": "Sign in using this link: http://localhost:3000/magic-callback?token=eyJ...\nThis link expires shortly."
+}
+```
+
+**Tip:** to view backend logs when running with Docker Compose:
+
+```bash
+docker-compose logs -f backend
+```
+
+Geocoding:
+- The admin page includes a **Geocode** button next to the Address field that queries the backend to resolve the address into latitude/longitude. By default this uses OpenStreetMap's Nominatim via the backend. To change provider or set a custom URL set `GEOCODER_PROVIDER_URL` in the backend environment.
+
+- In test mode `/auth/magic` returns the token directly (`{ ok: true, token }`) to simplify automated tests.
+- To complete sign-in: either visit the link which contains `?token=...` (handled by the frontend `magic-callback` page) or POST `/auth/magic/verify` with `{ "token": "..." }` to exchange for a session token.
+
+Examples (curl):
+
+```bash
+# request magic link (dev: link logged to backend console)
+curl -X POST -H "Content-Type: application/json" -d '{"email":"alice@example.com","redirectUrl":"http://localhost:3000/magic-callback"}' http://localhost:4000/auth/magic
+
+# exchange returned token for session token
+curl -X POST -H "Content-Type: application/json" -d '{"token":"<MAGIC_TOKEN>"}' http://localhost:4000/auth/magic/verify
+```
 
 ---
 
@@ -119,7 +159,7 @@ Run tests:
 ```bash
 # Backend unit/e2e tests (in-memory mongo)
 cd backend
-npm install
+npm ci
 npm test
 ```
 

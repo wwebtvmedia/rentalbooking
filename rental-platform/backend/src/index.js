@@ -34,6 +34,7 @@ app.use("/bookings", bookingRoutes);
 app.use("/availabilities", availabilityRoutes);
 app.use("/calendar", calendarRoutes);
 app.use('/auth', authRoutes);
+app.use('/geocode', (await import('./routes/geocode.js')).default);
 app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 
