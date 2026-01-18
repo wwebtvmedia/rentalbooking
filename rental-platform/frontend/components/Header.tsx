@@ -66,6 +66,7 @@ export default function Header() {
             <option value="2">Apartment 2</option>
             <option value="3">Apartment 3</option>
           </select>
+          <Link href="/apartment">Apartment</Link>
           <Link href="/magic-request" className="login">Log in</Link>
           <button role="switch" aria-pressed={theme === 'dark'} aria-label="Toggle theme" className="theme-toggle" onClick={toggleTheme}>{theme === 'dark' ? '🌙' : '☀️'}</button>
         </nav>

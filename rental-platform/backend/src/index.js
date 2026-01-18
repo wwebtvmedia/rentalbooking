@@ -6,6 +6,7 @@ import bookingRoutes from "./routes/bookings.js";
 import availabilityRoutes from "./routes/availabilities.js";
 import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
+import ucpRoutes from "./routes/ucp.js";
 import { startMcpServer } from "./mcp/server.js";
 import cors from "cors";
 
@@ -37,6 +38,7 @@ app.use('/auth', authRoutes);
 app.use('/geocode', (await import('./routes/geocode.js')).default);
 app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
+app.use('/ucp', ucpRoutes);
 
 // Payments and webhooks
 app.use('/payments', (await import('./routes/payments.js')).default);

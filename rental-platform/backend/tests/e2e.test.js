@@ -173,6 +173,71 @@ describe('E2E non-regression tests', () => {
     expect(inB).toBe(true);
   });
 
+  test('UCP discovery and checkout flow', async () => {
+    // 1. Create a UCP-enabled apartment
+    const capabilityHash = 'test-hash-123';
+    const ucpApartmentPayload = {
+      name: 'UCP Test Apt',
+      description: 'An apartment for UCP testing',
+      pricePerNight: 200,
+      ucpMetadata: {
+        capabilityHash: capabilityHash,
+        isAgenticEnabled: true,
+      },
+      dynamicPricing: {
+        baseRate: 200,
+        currency: 'USD'
+      }
+    };
+
+    const aptRes = await request
+      .post('/apartments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(ucpApartmentPayload)
+      .expect(201);
+    
+    const aptId = aptRes.body._id;
+
+    // Create a UniversalCommerce record for this apartment
+    const uc = await request
+      .post('/ucp/register') // Assuming a registration endpoint exists
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        itemId: aptId,
+        capabilityHash: capabilityHash,
+        baseRate: 200
+      })
+      .expect(201);
+    
+    const ucpId = uc.body._id;
+
+    // 2. Discover the apartment via UCP
+    const discoverRes = await request
+      .get(`/ucp/discover?capabilityHash=${capabilityHash}`)
+      .expect(200);
+
+    expect(discoverRes.body.protocol).toBe('UCP/1.0');
+    expect(discoverRes.body.results).toBeInstanceOf(Array);
+    const foundItem = discoverRes.body.results.find(item => item._id === ucpId);
+    expect(foundItem).toBeDefined();
+    expect(foundItem.itemId._id).toBe(aptId);
+
+    // 3. Initiate agentic checkout
+    const checkoutRes = await request
+      .post('/ucp/checkout')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ucpId: ucpId, paymentMandateId: 'test-mandate-456' })
+      .expect(201);
+
+    expect(checkoutRes.body.status).toBe('SUCCESS');
+    expect(checkoutRes.body.message).toBe('Checkout locked for agent session');
+
+    // 4. Verify the session is locked
+    const lockedItem = await request.get(`/ucp/item/${ucpId}`).expect(200); // Assuming an endpoint to get item details
+    expect(lockedItem.body.checkoutSession.status).toBe('LOCKED');
+    expect(lockedItem.body.checkoutSession.paymentMandateId).toBe('test-mandate-456');
+  });
+
   test('payments create-intent stub works for booking with deposit', async () => {
     // create an apartment with a fixed deposit ($75)
     const up = await request.post('/uploads').send({ filename: 'photo.png', b64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=' }).expect(200);

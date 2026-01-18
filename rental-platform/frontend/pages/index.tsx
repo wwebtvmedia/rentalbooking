@@ -15,7 +15,6 @@ export default function Home() {
   const [guest, setGuest] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [selected, setSelected] = useState<any>(null);
   const [apartments, setApartments] = useState<any[]>([]);
 
   useEffect(() => {
@@ -82,14 +81,7 @@ export default function Home() {
     setGuest(null);
   };
 
-  const selectApartment = (apt: any) => {
-    setSelected(apt);
-  };
 
-  const openCalendar = () => {
-    if (!selected) return alert('Select an apartment first');
-    router.push(`/calendar?apartmentId=${selected.id}`);
-  };
 
   return (
     <div style={{ padding: 20 }}>
@@ -121,41 +113,29 @@ export default function Home() {
             </div>
           </div>
 
+import Link from 'next/link';
+
+// ... (imports)
+
+// ... (Home component)
+
           <h2 style={{ marginTop: 20 }}>Choose an apartment</h2>
           <div style={{ display: 'flex', gap: 20 }}>
             <div style={{ minWidth: 300 }}>
               {apartments.map((a) => (
-                <div key={a.id || a._id || a.name} style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer', background: selected?.id === (a.id || a._id) ? '#f0f8ff' : 'white' }} onClick={() => selectApartment({ id: a.id || a._id, name: a.name, lat: a.lat, lon: a.lon, description: a.description, pricePerNight: a.pricePerNight, photos: a.photos, rules: a.rules })}>
-                  <h3 style={{ margin: '0 0 4px 0' }}>{a.name}</h3>
-                  <div style={{ fontSize: 14 }}>{a.description}</div>
-                  <div style={{ fontSize: 12, color: '#666' }}>Lat: {a.lat}, Lon: {a.lon}</div>
-                  {a.pricePerNight !== undefined && <div style={{ fontSize: 12, color: '#333' }}>Price/night: ${a.pricePerNight}</div>}
-                </div>
+                <Link href={`/apartment?id=${a.id || a._id}`} key={a.id || a._id || a.name}>
+                  <div style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer', background: selected?.id === (a.id || a._id) ? '#f0f8ff' : 'white' }}>
+                    <h3 style={{ margin: '0 0 4px 0' }}>{a.name}</h3>
+                    <div style={{ fontSize: 14 }}>{a.description}</div>
+                    <div style={{ fontSize: 12, color: '#666' }}>Lat: {a.lat}, Lon: {a.lon}</div>
+                    {a.pricePerNight !== undefined && <div style={{ fontSize: 12, color: '#333' }}>Price/night: ${a.pricePerNight}</div>}
+                  </div>
+                </Link>
               ))}
             </div>
 
             <div style={{ flex: 1 }}>
-              {selected ? (
-                <div>
-                  <h3>{selected.name}</h3>
-                  <p>{selected.description}</p>
-                  <div style={{ height: 400, border: '1px solid #ccc' }}>
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      frameBorder="0"
-                      scrolling="no"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${selected.lon - 0.01}%2C${selected.lat - 0.005}%2C${selected.lon + 0.01}%2C${selected.lat + 0.005}&layer=mapnik&marker=${selected.lat}%2C${selected.lon}`}
-                    />
-                  </div>
-
-                  <div style={{ marginTop: 12 }}>
-                    <button onClick={openCalendar}>View calendar</button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ color: '#666' }}>Select an apartment to see it on the map and view its calendar.</div>
-              )}
+              <div style={{ color: '#666' }}>Click on an apartment to see its details.</div>
             </div>
           </div>
         </div>

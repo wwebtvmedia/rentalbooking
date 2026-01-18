@@ -63,3 +63,16 @@ export const registerItem = async (req, res) => {
     res.status(500).json({ error: "Registration failed", details: error.message });
   }
 };
+
+// GET /api/ucp/item/:id - Get UCP item details
+export const getItem = async (req, res) => {
+  try {
+    const item = await UniversalCommerce.findById(req.params.id).populate('itemId');
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    res.status(200).json(item);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get item', details: error.message });
+  }
+};
