@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 // fallback static apartments (used if API is unavailable)
 const FALLBACK_APARTMENTS = [
@@ -113,18 +114,12 @@ export default function Home() {
             </div>
           </div>
 
-import Link from 'next/link';
-
-// ... (imports)
-
-// ... (Home component)
-
           <h2 style={{ marginTop: 20 }}>Choose an apartment</h2>
           <div style={{ display: 'flex', gap: 20 }}>
             <div style={{ minWidth: 300 }}>
               {apartments.map((a) => (
                 <Link href={`/apartment?id=${a.id || a._id}`} key={a.id || a._id || a.name}>
-                  <div style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer', background: selected?.id === (a.id || a._id) ? '#f0f8ff' : 'white' }}>
+                  <div style={{ padding: 10, border: '1px solid #ddd', marginBottom: 8, cursor: 'pointer' }}>
                     <h3 style={{ margin: '0 0 4px 0' }}>{a.name}</h3>
                     <div style={{ fontSize: 14 }}>{a.description}</div>
                     <div style={{ fontSize: 12, color: '#666' }}>Lat: {a.lat}, Lon: {a.lon}</div>
@@ -143,3 +138,4 @@ import Link from 'next/link';
     </div>
   );
 }
+

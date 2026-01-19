@@ -1,19 +1,17 @@
 const supertest = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 jest.setTimeout(30000);
 
-let mongod;
-let app;
 let request;
 let adminToken;
+let serverProcess;
 
 const { spawn } = require('child_process');
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  process.env.MONGO_URI = mongod.getUri();
+  // Use the 'mongo' service from docker-compose instead of mongodb-memory-server
+  process.env.MONGO_URI = 'mongodb://mongo:27017/test-e2e';
   process.env.AUTH_JWT_SECRET = 'test-secret';
   process.env.PORT = '5001';
 
@@ -73,8 +71,12 @@ afterAll(async () => {
   if (serverProcess) {
     serverProcess.kill('SIGTERM');
   }
-  await mongoose.disconnect();
-  if (mongod) await mongod.stop();
+  // clean up the test database
+  if (process.env.MONGO_URI) {
+    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connection.db.dropDatabase();
+    await mongoose.disconnect();
+  }
 });
 
 describe('E2E non-regression tests', () => {
