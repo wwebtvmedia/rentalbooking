@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const UniversalCommerceSchema = new mongoose.Schema({
   // Reference to the original rental item (Car, Furniture, Apartment, etc.)
   itemId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'RentalItem',
+    ref: 'Apartment',
     required: true
   },
   // UCP Protocol Fields
@@ -24,8 +24,8 @@ const UniversalCommerceSchema = new mongoose.Schema({
   checkoutSession: {
     sessionId: { type: String },
     paymentMandateId: { type: String }, // For Agent Payments Protocol (AP2)
-    status: { 
-      type: String, 
+    status: {
+      type: String,
       enum: ['OPEN', 'NEGOTIATING', 'LOCKED', 'COMPLETED', 'EXPIRED'],
       default: 'OPEN'
     }
@@ -41,4 +41,4 @@ const UniversalCommerceSchema = new mongoose.Schema({
 // Indexing for fast AI discovery
 UniversalCommerceSchema.index({ "ucpMetadata.capabilityHash": 1 });
 
-module.exports = mongoose.model('UniversalCommerce', UniversalCommerceSchema);
+export default mongoose.model('UniversalCommerce', UniversalCommerceSchema);

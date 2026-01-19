@@ -180,14 +180,6 @@ describe('E2E non-regression tests', () => {
       name: 'UCP Test Apt',
       description: 'An apartment for UCP testing',
       pricePerNight: 200,
-      ucpMetadata: {
-        capabilityHash: capabilityHash,
-        isAgenticEnabled: true,
-      },
-      dynamicPricing: {
-        baseRate: 200,
-        currency: 'USD'
-      }
     };
 
     const aptRes = await request
@@ -200,7 +192,7 @@ describe('E2E non-regression tests', () => {
 
     // Create a UniversalCommerce record for this apartment
     const uc = await request
-      .post('/ucp/register') // Assuming a registration endpoint exists
+      .post('/ucp/register')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         itemId: aptId,
@@ -233,9 +225,47 @@ describe('E2E non-regression tests', () => {
     expect(checkoutRes.body.message).toBe('Checkout locked for agent session');
 
     // 4. Verify the session is locked
-    const lockedItem = await request.get(`/ucp/item/${ucpId}`).expect(200); // Assuming an endpoint to get item details
+    const lockedItem = await request.get(`/ucp/item/${ucpId}`).expect(200);
     expect(lockedItem.body.checkoutSession.status).toBe('LOCKED');
     expect(lockedItem.body.checkoutSession.paymentMandateId).toBe('test-mandate-456');
+  });
+
+  test('UCP item population', async () => {
+    // 1. Create a new apartment
+    const apartmentName = 'UCP Population Test Apartment';
+    const apartmentPayload = {
+      name: apartmentName,
+      description: 'Test apartment for population',
+      pricePerNight: 150,
+    };
+    const aptRes = await request
+      .post('/apartments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(apartmentPayload)
+      .expect(201);
+    const aptId = aptRes.body._id;
+
+    // 2. Register the apartment for UCP
+    const capabilityHash = 'population-test-hash';
+    const uc = await request
+      .post('/ucp/register')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        itemId: aptId,
+        capabilityHash: capabilityHash,
+        baseRate: 150,
+      })
+      .expect(201);
+    const ucpId = uc.body._id;
+
+    // 3. Fetch the UCP item directly
+    const ucpItemRes = await request
+      .get(`/ucp/item/${ucpId}`)
+      .expect(200);
+
+    // 4. Verify that the itemId field is populated
+    expect(ucpItemRes.body.itemId).toBeInstanceOf(Object);
+    expect(ucpItemRes.body.itemId.name).toBe(apartmentName);
   });
 
   test('payments create-intent stub works for booking with deposit', async () => {
