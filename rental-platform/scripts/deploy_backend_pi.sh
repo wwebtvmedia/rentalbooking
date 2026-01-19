@@ -2,9 +2,29 @@
 set -euo pipefail
 
 REPO_URL=${1:-}
-APP_DIR=${2:-/home/pi/rental-backend}
-MONGO_IMAGE=${MONGO_IMAGE:-mongo:6.0}
+APP_DIR=${2:-/home/pi/rental-platform}
 
+# --- Prerequisites ---
+echo "Installing prerequisites: git, curl, docker..."
+sudo apt-get update
+sudo apt-get install -y curl git build-essential ca-certificates
+
+# Install Docker
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Installing Docker..."
+  curl -fsSL https://get.docker.com | sh
+  sudo usermod -aG docker "$USER"
+  echo "Docker installed. You may need to re-login for the docker group to apply."
+fi
+
+# Install Docker Compose
+if ! command -v docker-compose >/dev/null 2>&1; then
+  echo "Installing Docker Compose..."
+  sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
+fi
+
+# --- Application Setup ---
 if [ -n "$REPO_URL" ]; then
   echo "Cloning repo from $REPO_URL to $APP_DIR"
   git clone "$REPO_URL" "$APP_DIR"
@@ -12,53 +32,40 @@ else
   echo "No REPO_URL provided — assuming repository already present at $APP_DIR"
 fi
 
-sudo apt-get update
-sudo apt-get install -y curl git build-essential ca-certificates
-
-# Install Node 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install Docker
-if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sh
-  sudo usermod -aG docker "$USER"
-  echo "Docker installed. You may need to re-login for docker group to apply."
-fi
-
-# Start MongoDB in Docker (ARM-compatible official images are used)
-if ! docker ps -a --format '{{.Names}}' | grep -q '^mongo$'; then
-  docker run -d --name mongo --restart unless-stopped -p 27017:27017 -v /var/lib/mongo-data:/data/db "$MONGO_IMAGE"
-  echo "MongoDB container started"
-else
-  echo "MongoDB container already exists"
-fi
-
-# Create environment file
-mkdir -p "$APP_DIR"
-cat > "$APP_DIR/.env" <<EOF
-MONGO_URI=mongodb://localhost:27017/rental-platform
-PORT=4000
-AUTH_JWT_SECRET=$(openssl rand -base64 32)
-FRONTEND_ORIGIN=http://localhost:3000
-EOF
-
-# Install and start backend
 cd "$APP_DIR" || exit 1
-npm ci --legacy-peer-deps
 
-# Install pm2 process manager
-sudo npm install -g pm2
-pm2 start npm --name "rental-backend" -- start
-pm2 save
-pm2 startup systemd -u "$USER" --hp "$HOME" || true
+# Create environment file from example
+echo "Creating .env file..."
+if [ -f ".env.example" ]; then
+  cp .env.example .env
+else
+  echo "Warning: .env.example not found. Creating a default .env file."
+fi
+
+# Update .env with secure and correct values
+# Note: For a real deployment, these origins/URLs should point to the public IPs or domains.
+echo "MONGO_URI=mongodb://mongo:27017/rental-platform" >> .env
+echo "PORT=4000" >> .env
+echo "AUTH_JWT_SECRET=$(openssl rand -base64 32)" >> .env
+echo "FRONTEND_ORIGIN=http://localhost:3000" >> .env
+echo "NEXT_PUBLIC_BACKEND_URL=http://localhost:4000" >> .env
+
+# --- Deployment ---
+echo "Building and starting services with Docker Compose..."
+docker-compose build
+docker-compose up -d
 
 cat <<EOF
-Backend setup complete.
-- Backend directory: $APP_DIR
-- Env file: $APP_DIR/.env
-- MongoDB running in Docker on port 27017
-- Process manager: pm2 (service registered). Check with: pm2 status
 
-If the Raspberry Pi will serve only the backend, ensure the machine is reachable from the frontend and that firewall/NAT rules allow incoming connections on port 4000.
+Deployment complete.
+- Application directory: $APP_DIR
+- Environment file: $APP_DIR/.env
+- All services are running in Docker containers.
+- Check status with: docker-compose ps
+
+Services:
+- Frontend: http://localhost:3000
+- Backend:  http://localhost:4000
+- MongoDB:  Port 27017
+
 EOF
