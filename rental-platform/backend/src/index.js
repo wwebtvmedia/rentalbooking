@@ -8,7 +8,15 @@ import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
 import { startMcpServer } from "./mcp/server.js";
+import { McpTcpTransport } from "@modelcontextprotocol/sdk/transport/tcp.js";
 import cors from "cors";
+
+export function startMcpServerForAgent() {
+  const mcpServer = startMcpServer();
+  const transport = new McpTcpTransport({ port: 8999 });
+  mcpServer.start(transport);
+  logger.info("MCP server started with TCP transport on port 8999");
+}
 
 const app = express();
 // Allow the frontend origin. Adjust or restrict as needed for production.
