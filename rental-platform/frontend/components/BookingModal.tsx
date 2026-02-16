@@ -26,44 +26,97 @@ export default function BookingModal({ open, start, end, apartment, onClose, onS
 
   if (!open) return null;
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not selected';
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal">
-        <h2>Create booking</h2>
-        <p>
-          <strong>Start:</strong> {start} <br />
-          <strong>End:</strong> {end}
-        </p>
-        {apartment && (
-          <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-            {apartment.photos && apartment.photos.length > 0 && <img src={apartment.photos[0]} alt="photo" style={{ width: 120, height: 80, objectFit: 'cover' }} />}
-            <div>
-              <div><strong>{apartment.name}</strong></div>
-              <div>{apartment.description}</div>
-              <div style={{ marginTop: 6 }}><strong>Price/night:</strong> ${apartment.pricePerNight}</div>
-              {apartment.rules && <div style={{ marginTop: 6 }}><strong>Rules:</strong> {apartment.rules}</div>}
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-96 overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">Complete Your Booking</h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Date Range Display */}
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <p className="text-sm text-gray-600 mb-2"><strong>Check-in:</strong></p>
+            <p className="text-blue-900 font-semibold text-sm mb-3">{formatDate(start)}</p>
+            <p className="text-sm text-gray-600 mb-2"><strong>Check-out:</strong></p>
+            <p className="text-blue-900 font-semibold text-sm">{formatDate(end)}</p>
           </div>
-        )}
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label>
-          Email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        {error && <div className="error">{error}</div>}
-        <div className="modal-actions">
-          <button onClick={onClose} className="button secondary">Cancel</button>
+
+          {/* Apartment Info */}
+          {apartment && (
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {apartment.photos && apartment.photos.length > 0 && (
+                <img src={apartment.photos[0]} alt={apartment.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+              )}
+              <h3 className="font-bold text-gray-900 mb-2">{apartment.name}</h3>
+              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{apartment.description}</p>
+              <div className="text-blue-600 font-bold text-lg">${apartment.pricePerNight || 'TBD'}/night</div>
+            </div>
+          )}
+
+          {/* Form Fields */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <input 
+              type="text"
+              value={name} 
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Doe"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <input 
+              type="email"
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            />
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-900 text-sm font-semibold">
+              ⚠️ {error}
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3 bg-gray-50">
+          <button 
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition"
+          >
+            Cancel
+          </button>
           <button
-            className="button primary"
-            disabled={loading || name.trim() === ''}
             onClick={async () => {
+              if (!name.trim()) {
+                setError('Name is required');
+                return;
+              }
               setLoading(true);
               setError('');
               try {
-                await onSubmit({ start: start || '', end: end || '', name, email: email || 'noreply@example.com' });
+                await onSubmit({ 
+                  start: start || '', 
+                  end: end || '', 
+                  name, 
+                  email: email || 'noreply@example.com' 
+                });
                 onClose();
               } catch (err: any) {
                 setError(err?.message || 'Failed to create booking');
@@ -71,8 +124,10 @@ export default function BookingModal({ open, start, end, apartment, onClose, onS
                 setLoading(false);
               }
             }}
+            disabled={loading || !name.trim()}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition"
           >
-            {loading ? 'Saving...' : 'Create booking'}
+            {loading ? '⏳ Booking...' : 'Confirm Booking'}
           </button>
         </div>
       </div>

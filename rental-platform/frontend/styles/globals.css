@@ -1,3 +1,8 @@
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Brand color variables derived from the Tree4Five logo */
 :root {
   /* Light theme (default) */
