@@ -2,6 +2,7 @@ import express from "express";
 import Booking from "../models/Booking.js";
 import Availability from "../models/Availability.js";
 import { authMiddleware, requireRole } from "../auth/index.js";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -33,65 +34,79 @@ router.get('/:id', async (req, res) => {
 // Create booking (checks conflicts and creates blocking availability)
 // Creating a booking is still allowed to unauthenticated users (public booking).
 router.post("/", async (req, res) => {
+  const session = await mongoose.startSession();
   try {
-    const { fullName, email, start, end, apartmentId } = req.body;
-    if (!fullName || !email || !start || !end) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-    const s = new Date(start);
-    const e = new Date(end);
-    if (isNaN(s) || isNaN(e) || s >= e) {
-      return res.status(400).json({ error: "Invalid start/end" });
-    }
+    let booking;
+    await session.withTransaction(async () => {
+      const { fullName, email, start, end, apartmentId } = req.body;
+      if (!fullName || !email || !start || !end) {
+        throw new Error("MISSING_FIELDS");
+      }
+      const s = new Date(start);
+      const e = new Date(end);
+      if (isNaN(s) || isNaN(e) || s >= e) {
+        throw new Error("INVALID_DATES");
+      }
 
-    // Build apartment-specific query if provided
-    const aptFilter = apartmentId ? { apartmentId } : {};
+      // Build apartment-specific query if provided
+      const aptFilter = apartmentId ? { apartmentId } : {};
 
-    // Check overlap with existing bookings for the same apartment (or globally if not specified)
-    const conflictBooking = await Booking.findOne({
-      ...overlapsQuery(s, e),
-      status: "confirmed",
-      ...aptFilter
-    });
-    if (conflictBooking) {
-      return res.status(409).json({ error: "Time slot already booked" });
-    }
+      // Check overlap with existing bookings for the same apartment (or globally if not specified)
+      const conflictBooking = await Booking.findOne({
+        ...overlapsQuery(s, e),
+        status: "confirmed",
+        ...aptFilter
+      }).session(session);
+      if (conflictBooking) {
+        throw new Error("CONFLICT");
+      }
 
-    // Check blocked availability conflicts
-    const conflictAvail = await Availability.findOne({
-      ...overlapsQuery(s, e),
-      type: "blocked",
-      ...aptFilter
-    });
-    if (conflictAvail) {
-      return res.status(409).json({ error: "Time slot unavailable" });
-    }
+      // Check blocked availability conflicts
+      const conflictAvail = await Availability.findOne({
+        ...overlapsQuery(s, e),
+        type: "blocked",
+        ...aptFilter
+      }).session(session);
+      if (conflictAvail) {
+        throw new Error("CONFLICT");
+      }
 
-    const booking = await Booking.create({ fullName, email, apartmentId, start: s, end: e });
+      // Create booking within the transaction
+      const created = await Booking.create([{ fullName, email, apartmentId, start: s, end: e }], { session });
+      booking = created[0];
 
-    // Determine deposit amount (use apartment's depositAmount in cents if set, else global default)
-    try {
+      // Determine deposit amount
       let depositAmount = 0;
-      if (apartmentId) {
+      if (apartmentId && mongoose.Types.ObjectId.isValid(apartmentId)) {
         const Apartment = (await import('../models/Apartment.js')).default;
-        const apt = await Apartment.findById(apartmentId);
+        const apt = await Apartment.findById(apartmentId).session(session);
         if (apt && apt.depositAmount) depositAmount = apt.depositAmount;
       }
       if (!depositAmount && process.env.DEPOSIT_DEFAULT_AMOUNT) depositAmount = Number(process.env.DEPOSIT_DEFAULT_AMOUNT);
 
       booking.depositAmount = depositAmount;
       booking.paymentStatus = depositAmount > 0 ? 'requires_payment_method' : 'none';
-      await booking.save();
-    } catch (err) {
-      console.error('Error determining deposit amount', err);
-    }
+      await booking.save({ session });
 
-    // create a blocking availability tied to this booking
-    await Availability.create({ start: s, end: e, type: "blocked", bookingId: booking._id, apartmentId, note: "Booked" });
+      // create a blocking availability tied to this booking
+      await Availability.create([{ start: s, end: e, type: "blocked", bookingId: booking._id, apartmentId, note: "Booked" }], { session });
+    });
 
     return res.status(201).json(booking);
   } catch (err) {
+    console.error('Booking creation error:', err);
+    if (err.message === "CONFLICT") {
+      return res.status(409).json({ error: "Time slot already booked" });
+    }
+    if (err.message === "MISSING_FIELDS") {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    if (err.message === "INVALID_DATES") {
+      return res.status(400).json({ error: "Invalid start/end" });
+    }
     return res.status(500).json({ error: err.message });
+  } finally {
+    await session.endSession();
   }
 });
 

@@ -8,14 +8,17 @@ import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
 import { startMcpServer } from "./mcp/server.js";
-import { McpTcpTransport } from "@modelcontextprotocol/sdk/transport/tcp.js";
 import cors from "cors";
-
 export function startMcpServerForAgent() {
   const mcpServer = startMcpServer();
-  const transport = new McpTcpTransport({ port: 8999 });
-  mcpServer.start(transport);
-  logger.info("MCP server started with TCP transport on port 8999");
+  // eslint-disable-next-line import/no-unresolved
+  import("@modelcontextprotocol/sdk/transport/tcp.js").then(({ McpTcpTransport }) => {
+    const transport = new McpTcpTransport({ port: 8999 });
+    mcpServer.start(transport);
+    logger.info("MCP server started with TCP transport on port 8999");
+  }).catch(err => {
+    logger.error({ err }, "Failed to start MCP server with TCP transport");
+  });
 }
 
 const app = express();
@@ -48,6 +51,15 @@ app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  logger.error({ err, url: req.url, method: req.method }, "Unhandled error");
+  const status = err.status || 500;
+  res.status(status).json({
+    error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message
+  });
+});
 
 // Payments and webhooks
 app.use('/payments', (await import('./routes/payments.js')).default);

@@ -115,8 +115,12 @@ router.post('/:bookingId/refund', requireRole('admin'), async (req, res) => {
   }
 });
 
-// Test/dev helper: simulate a successful payment for the booking (available when stripe SDK not present or in test env)
+// Test/dev helper: simulate a successful payment for the booking
+// ONLY available in non-production environments
 router.post('/:bookingId/simulate-success', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production' });
+  }
   try {
     const { bookingId } = req.params;
     const booking = await Booking.findById(bookingId);

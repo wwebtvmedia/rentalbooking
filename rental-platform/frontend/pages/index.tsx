@@ -7,15 +7,15 @@ import Head from 'next/head';
 // fallback static apartments (used if API is unavailable)
 const FALLBACK_APARTMENTS = [
   { 
-    id: 'suresnes-apt', 
-    name: 'Comfortable and Convenient Stay in the Heart of Suresnes',
+    id: 'suresnes-luxury-loft', 
+    name: 'The Skyline Loft: Panoramic Views & Luxury Living near Paris',
     lat: 48.87297687408006, 
     lon: 2.2262012958526616, 
-    address: 'A2C0Q4, Rue Honoré d\'Estienne d\'Orves, Suresnes',
-    description: 'Located in the charming town of Suresnes, just outside Paris, this modern one-bedroom apartment offers a cozy living space with a comfortable lounge, fully equipped kitchen, and in-unit washing machine.',
-    smallDescription: 'Modern 1-bedroom apartment near Paris',
-    pricePerNight: 150,
-    photos: ['/uploads/appartement/chambre.avif', '/uploads/appartement/cuisine.avif', '/uploads/appartement/douche.avif', '/uploads/appartement/salon.avif']
+    address: 'Suresnes Heights, overlooking Paris skyline',
+    description: 'Perched on the hills of Suresnes, this designer loft combines industrial chic with warm, modern luxury. Experience breathtaking views of the Eiffel Tower from your private terrace, unwind in the spa-inspired rain shower, and enjoy a seamless stay with high-end appliances and curated art throughout.',
+    smallDescription: 'Luxury Designer Loft with Eiffel Tower Views',
+    pricePerNight: 285,
+    photos: ['/uploads/appartement/salon.avif', '/uploads/appartement/chambre.avif', '/uploads/appartement/cuisine.avif', '/uploads/appartement/douche.avif']
   }
 ];
 

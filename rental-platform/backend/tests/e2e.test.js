@@ -1,17 +1,29 @@
 const supertest = require('supertest');
 const mongoose = require('mongoose');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 let request;
 let adminToken;
 let serverProcess;
+let mongodb;
 
 const { spawn } = require('child_process');
 
 beforeAll(async () => {
   // Use the 'mongo' service from docker-compose instead of mongodb-memory-server
-  process.env.MONGO_URI = 'mongodb://mongo:27017/test-e2e';
+  // process.env.MONGO_URI = 'mongodb://mongo:27017/test-e2e';
+  
+  mongodb = await MongoMemoryReplSet.create({
+    replSet: {
+      name: 'rs0',
+      count: 1,
+      storageEngine: 'wiredTiger'
+    }
+  });
+  process.env.MONGO_URI = mongodb.getUri();
+  console.log('TEST MONGO_URI:', process.env.MONGO_URI);
   process.env.AUTH_JWT_SECRET = 'test-secret';
   process.env.PORT = '5001';
 
@@ -27,12 +39,12 @@ beforeAll(async () => {
     const s = d.toString();
     stdoutBuf += s;
     if (s.includes('Backend running on port')) started = true;
-    // console.log('srv:', s);
+    console.log('srv-out:', s);
   });
   serverProcess.stderr.on('data', (d) => {
     const s = d.toString();
     stderrBuf += s;
-    // console.error('srv-err:', s);
+    console.error('srv-err:', s);
   });
 
   // wait until started (or timeout)
@@ -71,11 +83,9 @@ afterAll(async () => {
   if (serverProcess) {
     serverProcess.kill('SIGTERM');
   }
-  // clean up the test database
-  if (process.env.MONGO_URI) {
-    await mongoose.connect(process.env.MONGO_URI);
-    await mongoose.connection.db.dropDatabase();
-    await mongoose.disconnect();
+  // stop mongodb memory server
+  if (mongodb) {
+    await mongodb.stop();
   }
 });
 

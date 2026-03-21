@@ -148,7 +148,8 @@ const CalendarPage = () => {
           const adminToken = window.prompt('Admin token to cancel (leave blank to abort)');
           if (!adminToken) return;
           try {
-            await axios.post(`http://localhost:4000/bookings/${ext.bookingId}/cancel`, {}, { headers: { Authorization: `Bearer ${adminToken}` } });
+            const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+            await axios.post(`${base}/bookings/${ext.bookingId}/cancel`, {}, { headers: { Authorization: `Bearer ${adminToken}` } });
             alert('Booking cancelled by admin');
             fetchEvents();
           } catch (err2: any) {
