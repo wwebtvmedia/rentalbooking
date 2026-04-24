@@ -8,14 +8,43 @@
 
 Prerequisites:
 - Node.js 20+ and npm
-- Docker & Docker Compose (optional, recommended to run full stack)
+- Podman & Podman Compose (optional, recommended to run full stack)
 
-Run the stack with Docker Compose (recommended):
+Run the stack with Podman Compose (recommended):
 
 ```bash
 # from repository root
-docker-compose up -d --build
+podman-compose up -d --build
 ```
+
+### 📦 How to install Podman
+
+Podman is a daemonless, open-source, Linux-native tool, designed to make it easy to find, run, build, share and deploy applications using Open Container Initiative (OCI) Containers and Container Images.
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install -y podman podman-compose
+```
+
+#### macOS (Homebrew)
+```bash
+brew install podman podman-compose
+podman machine init
+podman machine start
+```
+
+#### Windows
+1. Download and install the [Podman for Windows installer](https://github.com/containers/podman/releases).
+2. Install `podman-compose` via pip:
+   ```powershell
+   pip install podman-compose
+   ```
+3. Initialize the Podman machine:
+   ```powershell
+   podman machine init
+   podman machine start
+   ```
 
 This will start:
 - Backend: http://localhost:4000
@@ -50,7 +79,7 @@ npm run dev
     - models/ - Mongoose models: `Booking`, `Availability`, `Customer`
     - auth/ - JWT helpers and token CLI
 - frontend/ - Next.js pages and FullCalendar calendar UI
-- docker-compose.yml - starts `backend`, `frontend`, and `mongo`
+- podman-compose.yml - starts `backend`, `frontend`, and `mongo`
 
 ---
 
@@ -89,10 +118,10 @@ MAIL (dev): {
 }
 ```
 
-**Tip:** to view backend logs when running with Docker Compose:
+**Tip:** to view backend logs when running with Podman Compose:
 
 ```bash
-docker-compose logs -f backend
+podman-compose logs -f backend
 ```
 
 Geocoding:
@@ -249,7 +278,7 @@ The frontend stores guest tokens in localStorage (basic, for demo). On booking c
 
 The `scripts/` folder contains two helper scripts to provision Raspberry Pis for a small single‑node deployment:
 
-- `scripts/deploy_backend_pi.sh` — prepares a backend Pi: installs Node.js, Docker, starts a MongoDB container, installs dependencies, and runs the backend using `pm2`.
+- `scripts/deploy_backend_pi.sh` — prepares a backend Pi: installs Node.js, Podman, starts a MongoDB container, installs dependencies, and runs the backend using `pm2`.
 - `scripts/deploy_frontend_pi.sh` — prepares a frontend Pi (web server): installs Node.js, builds the Next.js app, creates `.env.local` with `NEXT_PUBLIC_BACKEND_URL`, runs the frontend with `pm2`, and optionally configures `nginx` as a reverse proxy.
 
 Quick example usage:

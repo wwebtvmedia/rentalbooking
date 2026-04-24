@@ -12,7 +12,7 @@ let mongodb;
 const { spawn } = require('child_process');
 
 beforeAll(async () => {
-  // Use the 'mongo' service from docker-compose instead of mongodb-memory-server
+  // Use the 'mongo' service from podman-compose instead of mongodb-memory-server
   // process.env.MONGO_URI = 'mongodb://mongo:27017/test-e2e';
   
   mongodb = await MongoMemoryReplSet.create({

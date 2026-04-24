@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Unified Start Script for Rental Platform
-# This script prepares the environment and starts the stack using Docker Compose.
+# This script prepares the environment and starts the stack using Podman Compose.
 
 set -e
 
 echo "🚀 Starting Rental Platform Deployment..."
 
 # 1. Check for Prerequisites
-command -v docker >/dev/null 2>&1 || { echo >&2 "❌ Docker is required but not installed. Aborting."; exit 1; }
-command -v docker-compose >/dev/null 2>&1 || { echo >&2 "❌ docker-compose is required but not installed. Aborting."; exit 1; }
+command -v podman >/dev/null 2>&1 || { echo >&2 "❌ Podman is required but not installed. Aborting."; exit 1; }
+command -v podman-compose >/dev/null 2>&1 || { echo >&2 "❌ podman-compose is required but not installed. Aborting."; exit 1; }
 
 # 2. Setup Environment Variables
 if [ ! -f .env ]; then
@@ -25,11 +25,11 @@ fi
 
 # 3. Pull and Build
 echo "🏗️  Building containers..."
-docker-compose -f rental-platform/docker-compose.yml build
+podman-compose -f rental-platform/podman-compose.yml build
 
 # 4. Start the Stack
 echo "🔌 Starting services (Backend, Frontend, MongoDB, MCP Client)..."
-docker-compose -f rental-platform/docker-compose.yml up -d
+podman-compose -f rental-platform/podman-compose.yml up -d
 
 # 5. Wait for Backend and Seed Database
 echo "⏳ Waiting for backend to be ready..."
@@ -51,5 +51,5 @@ echo "
 --------------------------------------------------
 
 To view logs, run:
-docker-compose -f rental-platform/docker-compose.yml logs -f
+podman-compose -f rental-platform/podman-compose.yml logs -f
 "

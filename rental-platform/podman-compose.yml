@@ -11,7 +11,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.txt
+      dockerfile: Containerfile
     container_name: backend
     restart: always
     env_file: .env
@@ -23,7 +23,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.txt
+      dockerfile: Containerfile
     container_name: frontend
     restart: always
     ports:
@@ -34,7 +34,7 @@ services:
   mcp-client:
     build:
       context: ./mcp-client
-      dockerfile: Dockerfile.txt
+      dockerfile: Containerfile
     container_name: mcp-client
     environment:
       - BACKEND_URL=http://backend:4000

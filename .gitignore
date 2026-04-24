@@ -38,8 +38,8 @@ venv/
 logs/
 *.log
 
-# Docker
-docker-compose.override.yml
+# Podman
+podman-compose.override.yml
 
 # Postgres data
 pgsql/data/

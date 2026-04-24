@@ -5,24 +5,9 @@ REPO_URL=${1:-}
 APP_DIR=${2:-/home/pi/rental-platform}
 
 # --- Prerequisites ---
-echo "Installing prerequisites: git, curl, docker..."
+echo "Installing prerequisites: git, curl, podman..."
 sudo apt-get update
-sudo apt-get install -y curl git build-essential ca-certificates
-
-# Install Docker
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Installing Docker..."
-  curl -fsSL https://get.docker.com | sh
-  sudo usermod -aG docker "$USER"
-  echo "Docker installed. You may need to re-login for the docker group to apply."
-fi
-
-# Install Docker Compose
-if ! command -v docker-compose >/dev/null 2>&1; then
-  echo "Installing Docker Compose..."
-  sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
-fi
+sudo apt-get install -y curl git build-essential ca-certificates podman podman-compose
 
 # --- Application Setup ---
 if [ -n "$REPO_URL" ]; then
@@ -51,17 +36,18 @@ echo "FRONTEND_ORIGIN=http://localhost:3000" >> .env
 echo "NEXT_PUBLIC_BACKEND_URL=http://localhost:4000" >> .env
 
 # --- Deployment ---
-echo "Building and starting services with Docker Compose..."
-docker-compose build
-docker-compose up -d
+echo "Building and starting services with Podman Compose..."
+# Use the renamed podman-compose.yml
+podman-compose -f rental-platform/podman-compose.yml build
+podman-compose -f rental-platform/podman-compose.yml up -d
 
 cat <<EOF
 
 Deployment complete.
 - Application directory: $APP_DIR
 - Environment file: $APP_DIR/.env
-- All services are running in Docker containers.
-- Check status with: docker-compose ps
+- All services are running in Podman containers.
+- Check status with: podman-compose -f rental-platform/podman-compose.yml ps
 
 Services:
 - Frontend: http://localhost:3000

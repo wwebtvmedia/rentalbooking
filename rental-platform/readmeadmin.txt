@@ -13,7 +13,7 @@ Local (recommended during development):
 
 From the running backend container:
 - Run inside container to ensure it uses the same environment (secrets):
-  docker-compose exec backend node src/auth/create_token.js --id=admin1 --name=Admin --email=admin@example.com --roles=admin
+  podman-compose exec backend node src/auth/create_token.js --id=admin1 --name=Admin --email=admin@example.com --roles=admin
 
 Notes:
 - The script signs tokens with the secret found in `AUTH_JWT_SECRET` or `JWT_SECRET` (see `.env`). If the secret isn't set the script will throw an error.
@@ -76,11 +76,11 @@ Geocoding:
 - "Invalid or expired token"
   - Admin tokens created with `create_token` have expiry (7d default); check expiry.
   - For magic sign-in tokens: they are single-use and short-lived (15 minutes) — reusing will return "Invalid or expired token".
-  - Check server time / container clock: `docker-compose exec backend date`.
+  - Check server time / container clock: `podman-compose exec backend date`.
 
 - Check backend logs for relevant messages:
-  docker-compose logs -f backend
-  or filter on PowerShell: docker-compose logs -f backend | Select-String 'Authorization' | Select-String 'token'
+  podman-compose logs -f backend
+  or filter on PowerShell: podman-compose logs -f backend | Select-String 'Authorization' | Select-String 'token'
 
 - Inspect token payload quickly (without verification):
   - Use jwt.io or decode the middle segment: the token has three parts; the middle part is base64url JSON with claims (replace -/_ and base64-decode it to inspect `exp`, `roles`, `email`).

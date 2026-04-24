@@ -6,7 +6,7 @@
 
 ## 🚀 Quick start (One-Click)
 
-The easiest way to launch the full stack is using the provided `start.sh` script in the root directory. It handles environment setup, Docker builds, and initial database seeding automatically.
+The easiest way to launch the full stack is using the provided `start.sh` script in the root directory. It handles environment setup, Podman builds, and initial database seeding automatically.
 
 ```bash
 # from repository root
@@ -17,7 +17,7 @@ This will start:
 - **Frontend:** http://localhost:3000
 - **Backend:** http://localhost:4000
 - **MCP SSE:** http://localhost:4000/mcp
-- **MongoDB:** Internal to Docker
+- **MongoDB:** Internal to Podman
 
 ---
 
@@ -28,7 +28,7 @@ This will start:
   - `src/routes/ucp.js` - Universal Commerce Protocol (UCP) endpoints
 - `frontend/` - Next.js pages and FullCalendar UI
 - `mcp-client/` - Python-based AI agent client for MCP testing
-- `docker-compose.yml` - Orchestrates all services
+- `podman-compose.yml` - Orchestrates all services
 
 ---
 
