@@ -1,25 +1,37 @@
-from mcp import Client
+import asyncio
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 from loguru import logger
+import os
 
-client = Client(
-    server_command=["node", "-e", "import('file:///app/backend/src/index.js').then(module => module.startMcpServerForAgent())"],
-    # server_command=["node", "/app/src/index.js", "--mcp"],
-    headers={"Authorization": "Bearer admin-token"}
-)
+async def main():
+    backend_url = os.getenv("BACKEND_URL", "http://backend:4000")
+    mcp_endpoint = f"{backend_url}/mcp"
+    
+    logger.info(f"Connecting to MCP at {mcp_endpoint}")
+    
+    async with sse_client(mcp_endpoint) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            
+            logger.info("Session initialized. Listing tools...")
+            tools = await session.list_tools()
+            logger.info(f"Available tools: {[t.name for t in tools.tools]}")
+            
+            # Example call
+            result = await session.call_tool(
+                "create_apartment",
+                {
+                    "name": "Suresnes Premium Stay",
+                    "description": "Modern apartment near Paris",
+                    "address": "Rue Honoré d'Estienne d'Orves, Suresnes, France",
+                    "pricePerNight": 150
+                }
+            )
+            logger.info(f"Result: {result}")
 
-result = client.call_tool(
-    "create_apartment",
-    {
-        "name": "Comfortable and Convenient Stay in the Heart of Suresnes",
-        "description": "Located in the charming town of Suresnes, just outside Paris, this modern one-bedroom apartment offers a cozy living space with a comfortable lounge, fully equipped kitchen, and in-unit washing machine. Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.",
-        "smallDescription": "Prime Location Near Paris the apartment is ideally located close to top Parisian landmarks, including the Palais des Congrès (6 km), and Eiffel Tower (7 km).",
-        "address": "Rue Honoré d'Estienne d'Orves, Suresnes, 92150, France",
-        "lat": 48.87297687408006,
-        "lon": 2.2262012958526616,
-        "photos": ["appartement/chambre.avif", "appartement/cuisine.avif", "appartement/douche.avif", "appartement/salon.avif"],
-        "pricePerNight": 120,
-        "depositAmount": 500
-    }
-)
-
-logger.info(result)
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"Client failed: {e}")

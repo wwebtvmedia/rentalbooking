@@ -36,6 +36,8 @@ services:
       context: ./mcp-client
       dockerfile: Dockerfile.txt
     container_name: mcp-client
+    environment:
+      - BACKEND_URL=http://backend:4000
     depends_on:
       - backend
     stdin_open: true

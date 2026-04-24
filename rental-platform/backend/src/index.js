@@ -7,18 +7,21 @@ import availabilityRoutes from "./routes/availabilities.js";
 import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
-import { startMcpServer } from "./mcp/server.js";
+import { getMcpServer } from "./mcp/server.js";
 import cors from "cors";
-export function startMcpServerForAgent() {
-  const mcpServer = startMcpServer();
-  // eslint-disable-next-line import/no-unresolved
-  import("@modelcontextprotocol/sdk/transport/tcp.js").then(({ McpTcpTransport }) => {
-    const transport = new McpTcpTransport({ port: 8999 });
-    mcpServer.start(transport);
-    logger.info("MCP server started with TCP transport on port 8999");
-  }).catch(err => {
-    logger.error({ err }, "Failed to start MCP server with TCP transport");
-  });
+
+let mcpTransport = null;
+
+async function handleMcp(req, res) {
+  const { SSEServerTransport } = await import("@modelcontextprotocol/sdk/server/sse.js");
+  mcpTransport = new SSEServerTransport("/mcp/messages", res);
+  const server = getMcpServer();
+  await server.connect(mcpTransport);
+}
+
+async function handleMcpMessages(req, res) {
+  if (!mcpTransport) return res.status(400).json({ error: "No active SSE session" });
+  await mcpTransport.handlePostMessage(req, res);
 }
 
 const app = express();
@@ -52,6 +55,10 @@ app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
 
+// MCP SSE routes
+app.get("/mcp", handleMcp);
+app.post("/mcp/messages", handleMcpMessages);
+
 // Global error handler
 app.use((err, req, res, next) => {
   logger.error({ err, url: req.url, method: req.method }, "Unhandled error");
@@ -71,13 +78,5 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 app.listen(PORT, () => {
   logger.info(`Backend running on port ${PORT}`);
 });
-
-if (process.env.NODE_ENV !== 'test') {
-  if (process.env.ENABLE_MCP_TCP === 'true') {
-    startMcpServerForAgent();
-  } else {
-    startMcpServer();
-  }
-}
 
 export default app;

@@ -5,13 +5,17 @@ import { logger } from "../logger.js";
 import Apartment from "../models/Apartment.js";
 import { geocodeAddress } from "../lib/geocoder.js";
 
-export function startMcpServer() {
-  const server = new McpServer({
+let serverInstance = null;
+
+export function getMcpServer() {
+  if (serverInstance) return serverInstance;
+
+  serverInstance = new McpServer({
     name: "rental-mcp",
     version: "1.0.0"
   });
 
-  server.registerTool("create_customer", {
+  serverInstance.registerTool("create_customer", {
     inputSchema: {
       type: "object",
       properties: {
@@ -103,7 +107,17 @@ export function startMcpServer() {
     };
   });
 
-  // Note: not starting a transport here. Callers should connect the server to a transport when needed.
   logger.info("MCP server configured (tools registered)");
+  return serverInstance;
+}
+
+export function startMcpServer() {
+  const server = getMcpServer();
+  // Standard stdio transport for local use if needed
+  import("@modelcontextprotocol/sdk/transport/stdio.js").then(({ McpStdioTransport }) => {
+     // This is just a placeholder as index.js calls it. 
+     // For Express, we will use SSE instead.
+  }).catch(() => {});
   return server;
 }
+
