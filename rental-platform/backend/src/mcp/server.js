@@ -46,7 +46,7 @@ export function getMcpServer() {
     };
   });
 
-  server.registerTool("create_apartment", {
+  serverInstance.registerTool("create_apartment", {
     inputSchema: {
       type: "object",
       properties: {

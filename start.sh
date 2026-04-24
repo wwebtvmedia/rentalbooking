@@ -23,13 +23,17 @@ else
     echo "✅ .env file already exists."
 fi
 
+# Ensure .env is available in the rental-platform directory for podman-compose
+cp .env rental-platform/.env
+cp .env rental-platform/frontend/.env
+
 # 3. Pull and Build
 echo "🏗️  Building containers..."
-podman-compose -f rental-platform/podman-compose.yml build
+(cd rental-platform && podman-compose build)
 
 # 4. Start the Stack
 echo "🔌 Starting services (Backend, Frontend, MongoDB, MCP Client)..."
-podman-compose -f rental-platform/podman-compose.yml up -d
+(cd rental-platform && podman-compose up -d)
 
 # 5. Wait for Backend and Seed Database
 echo "⏳ Waiting for backend to be ready..."
@@ -51,5 +55,5 @@ echo "
 --------------------------------------------------
 
 To view logs, run:
-podman-compose -f rental-platform/podman-compose.yml logs -f
+cd rental-platform && podman-compose logs -f
 "
