@@ -73,7 +73,11 @@ app.listen(PORT, () => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  startMcpServer();
+  if (process.env.ENABLE_MCP_TCP === 'true') {
+    startMcpServerForAgent();
+  } else {
+    startMcpServer();
+  }
 }
 
 export default app;

@@ -16,6 +16,10 @@ beforeAll(async () => {
   // process.env.MONGO_URI = 'mongodb://mongo:27017/test-e2e';
   
   mongodb = await MongoMemoryReplSet.create({
+    binary: {
+      version: '8.0.0',
+      distro: 'ubuntu2204'
+    },
     replSet: {
       name: 'rs0',
       count: 1,
