@@ -112,30 +112,35 @@ export default function Home() {
       </Head>
 
       <header className="site-header">
-        <div className="container flex justify-between items-center w-full">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-500">
-              <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
-            </div>
-            <span className="brand-text">dreamflat</span>
-          </Link>
+        <div className="container grid grid-cols-2 lg:grid-cols-3 items-center w-full">
+          {/* Left: Logo & Brand */}
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center gap-4 group">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-500">
+                <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
+              </div>
+              <span className="brand-text lg:text-2xl">dreamflat</span>
+            </Link>
+          </div>
 
-          <nav className="hidden lg:flex items-center gap-12 text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">
+          {/* Center: Navigation (Desktop Only) */}
+          <nav className="hidden lg:flex justify-center items-center gap-12 text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">
             <Link href="#" className="hover:text-black transition">Collections</Link>
             <Link href="#" className="hover:text-black transition">Concierge</Link>
             <Link href="#" className="hover:text-black transition">Owners</Link>
           </nav>
 
-          <div className="flex items-center gap-4 sm:gap-8 ml-auto">
+          {/* Right: Actions */}
+          <div className="flex items-center justify-end gap-4 sm:gap-8">
             {guest ? (
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden sm:inline">Member: {guest.fullName.split(' ')[0]}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden xl:inline">Member: {guest.fullName.split(' ')[0]}</span>
                 <button onClick={logout} className="text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition">Exit</button>
               </div>
             ) : (
               <button 
                 onClick={() => document.getElementById('auth')?.scrollIntoView({behavior: 'smooth'})}
-                className="btn btn-outline border-none text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+                className="btn btn-outline border-none text-[10px] font-black uppercase tracking-widest whitespace-nowrap hidden sm:block"
               >
                 Sign In
               </button>
@@ -176,15 +181,15 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="absolute bottom-12 right-12 z-10 hidden lg:flex items-center gap-8">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Location</span>
-              <span className="text-white font-bold">Paris / Suresnes</span>
+          <div className="absolute bottom-16 right-12 z-10 hidden lg:flex items-center gap-12 p-8 glass-panel rounded-2xl">
+            <div className="flex flex-col items-start min-w-[120px]">
+              <span className="text-[9px] font-black text-gold uppercase tracking-[0.3em] mb-2">Location</span>
+              <span className="text-white font-bold text-sm">Paris / Suresnes</span>
             </div>
-            <div className="w-px h-12 bg-white/20" />
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Available</span>
-              <span className="text-white font-bold">12 Properties</span>
+            <div className="w-px h-10 bg-white/20" />
+            <div className="flex flex-col items-start min-w-[120px]">
+              <span className="text-[9px] font-black text-gold uppercase tracking-[0.3em] mb-2">Inventory</span>
+              <span className="text-white font-bold text-sm">12 Active Stays</span>
             </div>
           </div>
         </section>
