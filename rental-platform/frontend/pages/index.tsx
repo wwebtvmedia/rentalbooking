@@ -112,7 +112,7 @@ export default function Home() {
       </Head>
 
       <header className="site-header">
-        <div className="container grid grid-cols-2 lg:grid-cols-3 items-center w-full">
+        <div className="container site-header-inner">
           {/* Left: Logo & Brand */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-4 group">
@@ -131,7 +131,7 @@ export default function Home() {
           </nav>
 
           {/* Right: Actions */}
-          <div className="flex items-center justify-end gap-4 sm:gap-8">
+          <div className="flex items-center justify-end gap-2 sm:gap-8">
             {guest ? (
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden xl:inline">Member: {guest.fullName.split(' ')[0]}</span>
@@ -145,7 +145,7 @@ export default function Home() {
                 Sign In
               </button>
             )}
-            <button className="btn btn-primary !py-3 !px-8 text-[10px] whitespace-nowrap">Book Now</button>
+            <button className="btn btn-primary !py-3 px-4 sm:!px-8 text-[10px] whitespace-nowrap">Book Now</button>
           </div>
         </div>
       </header>
@@ -174,9 +174,9 @@ export default function Home() {
               <p className="text-xl text-gray-300 max-w-xl leading-relaxed mb-12 fade-in-up" style={{ animationDelay: '0.6s' }}>
                 Discover an elite collection of architecturally significant residences, curated for those who demand the extraordinary.
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 fade-in-up" style={{ animationDelay: '0.8s' }}>
-                <button className="btn btn-gold px-12 whitespace-nowrap">View Collection</button>
-                <button className="btn glass-panel text-white border-white/20 px-12 whitespace-nowrap">Our Story</button>
+              <div className="flex flex-row flex-wrap gap-3 sm:gap-6 fade-in-up" style={{ animationDelay: '0.8s' }}>
+                <button className="btn btn-gold px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">View Collection</button>
+                <button className="btn glass-panel text-white border-white/20 px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">Our Story</button>
               </div>
             </div>
           </div>
@@ -288,7 +288,7 @@ export default function Home() {
                       />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-row gap-4">
                       <button onClick={handleCreate} className="btn btn-primary flex-1">Create Account</button>
                       <button onClick={handleLogin} className="btn btn-outline flex-1">Sign In</button>
                     </div>

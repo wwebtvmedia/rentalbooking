@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # copy only the app files we need for build (pages, components, styles, types, etc.)
-COPY tsconfig.json ./
+COPY tsconfig.json tailwind.config.js postcss.config.js ./
 COPY pages ./pages
 COPY components ./components
 COPY styles ./styles
