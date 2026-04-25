@@ -57,6 +57,7 @@ This will start:
 - Backend: http://localhost:4000
 - Frontend: http://localhost:3000
 - MongoDB: 27017 (internal to compose)
+- MailHog (Email testing): http://localhost:8025
 
 Or run services locally (backend):
 
