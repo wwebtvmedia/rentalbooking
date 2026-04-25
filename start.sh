@@ -33,7 +33,11 @@ echo "🏗️  Building containers..."
 
 # 4. Start the Stack
 echo "🔌 Starting services (Backend, Frontend, MongoDB, MCP Client)..."
-(cd rental-platform && podman-compose up -d)
+if ! (cd rental-platform && podman-compose up -d); then
+    echo "❌ Failed to start services. This might be due to existing containers with the same names."
+    echo "💡 Try running ./clean.sh first to remove old containers, then try ./start.sh again."
+    exit 1
+fi
 
 # 5. Wait for Backend and Seed Database
 echo "⏳ Waiting for backend to be ready..."

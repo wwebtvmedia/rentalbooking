@@ -10,12 +10,19 @@ Prerequisites:
 - Node.js 20+ and npm
 - Podman & Podman Compose (optional, recommended to run full stack)
 
-Run the stack with Podman Compose (recommended):
+### Using helper scripts (Recommended)
+
+The project includes helper scripts to manage the stack:
 
 ```bash
-# from repository root
-podman-compose up -d --build
+# Start the full stack (builds, starts containers, and seeds database)
+./start.sh
+
+# Stop and remove all containers (clean cleanup)
+./clean.sh
 ```
+
+### Manual run with Podman Compose
 
 ### 📦 How to install Podman
 
