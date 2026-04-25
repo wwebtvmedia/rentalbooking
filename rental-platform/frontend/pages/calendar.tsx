@@ -156,61 +156,65 @@ const CalendarPage = () => {
   return (
     <>
       <Head>
-        <title>Select Dates - dreamflat</title>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+        <title>Select Dates | dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
       
-      <div className="min-h-screen bg-[#f8f9fa]">
+      <div className="min-h-screen bg-[#fdfdfd]">
         <header className="site-header">
-          <div className="container site-header-inner">
-            <Link href="/" className="flex items-center">
-              <span className="text-2xl mr-2">🏠</span>
+          <div className="container flex justify-between items-center">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white group-hover:rotate-12 transition-transform duration-300">
+                <span className="text-xl">🏠</span>
+              </div>
               <span className="brand-text">dreamflat</span>
             </Link>
             <button 
               onClick={() => router.back()}
-              className="btn btn-outline text-xs py-1 px-3"
+              className="btn btn-outline border-none text-gray-500 hover:text-black"
             >
-              ← Back
+              ← Back to Residence
             </button>
           </div>
         </header>
 
-        <main className="container py-10">
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-[#202124]">Select your dates</h1>
+        <main className="container py-16">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-12 animate-fade-in">
+              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">Reserve your stay</h1>
               {apartment && (
-                <p className="text-[#5f6368] mt-2 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  Booking for: <span className="font-medium text-[#202124]">{apartment.name}</span>
-                </p>
+                <div className="flex items-center gap-3 p-4 bg-black rounded-2xl w-fit">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                  <span className="text-sm font-black text-white uppercase tracking-widest">Property: {apartment.name}</span>
+                </div>
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <div className="card p-6">
-                  <FullCalendar
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    initialView="dayGridMonth"
-                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
-                    selectable={true}
-                    selectMirror={true}
-                    select={handleDateSelect}
-                    eventClick={handleEventClick}
-                    events={events}
-                    ref={calendarRef}
-                    height="auto"
-                    themeSystem="standard"
-                  />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <div className="lg:col-span-2 animate-fade-in">
+                <div className="card !p-8 !rounded-[32px] border-none shadow-2xl bg-white ring-1 ring-gray-100">
+                  <div className="calendar-container">
+                    <FullCalendar
+                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                      initialView="dayGridMonth"
+                      headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
+                      selectable={true}
+                      selectMirror={true}
+                      select={handleDateSelect}
+                      eventClick={handleEventClick}
+                      events={events}
+                      ref={calendarRef}
+                      height="auto"
+                      themeSystem="standard"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="card p-6">
-                  <h3 className="font-bold text-[#202124] mb-4">Quick Actions</h3>
+              <div className="space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <div className="card !p-8 !rounded-[32px] border-none shadow-xl bg-white ring-1 ring-gray-100">
+                  <h3 className="text-xl font-black text-gray-900 mb-6 uppercase tracking-tight">Booking Info</h3>
                   <button 
                     onClick={() => { 
                       setModalRange({ 
@@ -219,47 +223,43 @@ const CalendarPage = () => {
                       }); 
                       setModalOpen(true); 
                     }} 
-                    className="btn btn-primary w-full py-3 mb-3"
+                    className="btn btn-luxury w-full py-5 mb-6 text-lg font-black"
                   >
-                    + Create custom booking
+                    Custom Request
                   </button>
-                  <p className="text-xs text-[#5f6368] text-center">
-                    Tip: You can also click and drag directly on the calendar to select dates.
+                  <p className="text-xs text-gray-400 font-bold text-center leading-relaxed">
+                    Select dates directly on the calendar to begin your reservation process.
                   </p>
                 </div>
 
-                <div className="card p-6">
-                  <h3 className="font-bold text-[#202124] mb-4">Legend</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-[#3788d8] rounded"></div>
-                      <span className="text-sm text-[#5f6368]">Available slots</span>
+                <div className="card !p-8 !rounded-[32px] border-none shadow-xl bg-white ring-1 ring-gray-100">
+                  <h3 className="text-xl font-black text-gray-900 mb-6 uppercase tracking-tight">Availability Legend</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-5 h-5 bg-[#3788d8] rounded-lg shadow-sm"></div>
+                      <span className="text-sm font-bold text-gray-600 uppercase tracking-widest">Available</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-[#ff9f89] rounded"></div>
-                      <span className="text-sm text-[#5f6368]">Your bookings</span>
+                    <div className="flex items-center gap-4">
+                      <div className="w-5 h-5 bg-[#ff9f89] rounded-lg shadow-sm"></div>
+                      <span className="text-sm font-bold text-gray-600 uppercase tracking-widest">Confirmed</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-[#ef4444] rounded"></div>
-                      <span className="text-sm text-[#5f6368]">Unavailable / Blocked</span>
+                    <div className="flex items-center gap-4">
+                      <div className="w-5 h-5 bg-[#ef4444] rounded-lg shadow-sm"></div>
+                      <span className="text-sm font-bold text-gray-600 uppercase tracking-widest">Reserved</span>
                     </div>
                   </div>
                 </div>
 
                 {toast && (
-                  <div className="p-4 bg-green-50 border border-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2 animate-pulse">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
+                  <div className="p-6 bg-black text-white rounded-[24px] text-sm font-bold flex items-center gap-3 animate-bounce shadow-2xl">
+                    <span className="text-xl">✨</span>
                     {toast}
                   </div>
                 )}
 
                 {error && (
-                  <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
+                  <div className="p-6 bg-red-50 border border-red-100 text-red-700 rounded-[24px] text-sm font-bold flex items-center gap-3 shadow-sm">
+                    <span className="text-xl">⚠️</span>
                     {error}
                   </div>
                 )}
@@ -277,6 +277,14 @@ const CalendarPage = () => {
         onClose={() => setModalOpen(false)}
         onSubmit={createBooking}
       />
+
+      <style jsx global>{`
+        .fc { --fc-border-color: #f1f3f4; --fc-button-bg-color: #000; --fc-button-border-color: #000; --fc-button-hover-bg-color: #333; --fc-button-active-bg-color: #000; }
+        .fc .fc-toolbar-title { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; text-transform: uppercase; }
+        .fc .fc-col-header-cell-cushion { font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9aa0a6; padding: 12px 0; }
+        .fc-daygrid-day-number { font-weight: 700; font-size: 0.875rem; padding: 8px !important; }
+        .fc-button-primary:disabled { background-color: #000 !important; border-color: #000 !important; opacity: 1 !important; }
+      `}</style>
     </>
   );
 };
