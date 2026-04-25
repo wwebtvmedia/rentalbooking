@@ -65,7 +65,12 @@ app.use(express.json());
 
 // serve uploaded files
 import path from 'path';
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const uploadDir = path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadDir, {
+  setHeaders: (res) => {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 const PORT = process.env.PORT || 4000;
 

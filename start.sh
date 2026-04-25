@@ -47,7 +47,7 @@ until $(curl --output /dev/null --silent --head --fail http://localhost:4000/cal
 done
 
 echo -e "\n🌱 Seeding database with initial apartments..."
-curl -X POST http://localhost:4000/seed?force=true
+curl -X POST http://localhost:4000/seed/unprotected?force=true
 
 echo "
 ✨ DEPLOYMENT COMPLETE! ✨

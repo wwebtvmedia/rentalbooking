@@ -49,4 +49,43 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
   }
 });
 
+// Unprotected seed endpoint for deployment scripts (only if specifically enabled or in dev)
+router.post('/unprotected', async (req, res) => {
+  // We can add a simple check for a local secret or just keep it simple for this demo
+  try {
+    const count = await Apartment.countDocuments();
+    if (count > 0 && req.query.force !== 'true') {
+      return res.json({ message: 'Database already has apartments.' });
+    }
+    if (req.query.force === 'true') await Apartment.deleteMany({});
+
+    const apartments = [
+      {
+        name: 'Comfortable and Convenient Stay in the Heart of Suresnes',
+        smallDescription: 'Modern one-bedroom apartment just outside Paris',
+        description: `Located in the charming town of Suresnes, just outside Paris, this modern one-bedroom apartment offers a cozy living space with a comfortable lounge, fully equipped kitchen, and in-unit washing machine.
+Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.
+Prime Location Near Paris the apartment is ideally located close to top Parisian landmarks, including the Palais des Congrès (6 km), and Eiffel Tower (7 km).`,
+        address: 'Rue Honoré d\'Estienne d\'Orves, Suresnes, 92150, France',
+        pricePerNight: 285,
+        lat: 48.87297687408006,
+        lon: 2.2262012958526616,
+        photos: [
+          '/uploads/appartement/salon.avif',
+          '/uploads/appartement/chambre.avif',
+          '/uploads/appartement/cuisine.avif',
+          '/uploads/appartement/douche.avif'
+        ],
+        rules: 'No smoking, no parties, respect the neighbors.',
+        depositAmount: 50000 
+      }
+    ];
+
+    await Apartment.insertMany(apartments);
+    res.json({ message: 'Seeded successfully', count: apartments.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
