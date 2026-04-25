@@ -125,9 +125,9 @@ export default function Home() {
 
           {/* Center: Navigation (Desktop Only) */}
           <nav className="hidden lg:flex justify-center items-center gap-12 text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">
-            <Link href="#" className="hover:text-black transition">Collections</Link>
-            <Link href="#" className="hover:text-black transition">Concierge</Link>
-            <Link href="#" className="hover:text-black transition">Owners</Link>
+            <Link href="/collections" className="hover:text-black transition">Collections</Link>
+            <Link href="/concierge" className="hover:text-black transition">Concierge</Link>
+            <Link href="/owners" className="hover:text-black transition">Owners</Link>
           </nav>
 
           {/* Right: Actions */}
@@ -175,8 +175,8 @@ export default function Home() {
                 Discover an elite collection of architecturally significant residences, curated for those who demand the extraordinary.
               </p>
               <div className="flex flex-row flex-wrap gap-3 sm:gap-6 fade-in-up" style={{ animationDelay: '0.8s' }}>
-                <button className="btn btn-gold px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">View Collection</button>
-                <button className="btn glass-panel text-white border-white/20 px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">Our Story</button>
+                <Link href="/collections" className="btn btn-gold px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">View Collection</Link>
+                <Link href="/story" className="btn glass-panel text-white border-white/20 px-6 sm:px-12 whitespace-nowrap text-[10px] sm:text-sm">Our Story</Link>
               </div>
             </div>
           </div>
@@ -318,18 +318,18 @@ export default function Home() {
             <div>
               <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-10 text-gray-400">Support</h5>
               <ul className="space-y-6 text-[11px] font-black uppercase tracking-widest text-gray-500">
-                <li><Link href="#" className="hover:text-black transition">Help Centre</Link></li>
-                <li><Link href="#" className="hover:text-black transition">Safety Guidelines</Link></li>
-                <li><Link href="#" className="hover:text-black transition">Cancellation Policies</Link></li>
+                <li><Link href="/help" className="hover:text-black transition">Help Centre</Link></li>
+                <li><Link href="/safety" className="hover:text-black transition">Safety Guidelines</Link></li>
+                <li><Link href="/cancellation" className="hover:text-black transition">Cancellation Policies</Link></li>
               </ul>
             </div>
 
             <div>
               <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-10 text-gray-400">Company</h5>
               <ul className="space-y-6 text-[11px] font-black uppercase tracking-widest text-gray-500">
-                <li><Link href="#" className="hover:text-black transition">Our Vision</Link></li>
-                <li><Link href="#" className="hover:text-black transition">Join Team</Link></li>
-                <li><Link href="#" className="hover:text-black transition">Journal</Link></li>
+                <li><Link href="/vision" className="hover:text-black transition">Our Vision</Link></li>
+                <li><Link href="/team" className="hover:text-black transition">Join Team</Link></li>
+                <li><Link href="/journal" className="hover:text-black transition">Journal</Link></li>
               </ul>
             </div>
           </div>
@@ -337,8 +337,8 @@ export default function Home() {
           <div className="mt-32 pt-12 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">
             <p>© 2026 dreamflat by treeforfive. All Rights Reserved.</p>
             <div className="flex gap-12">
-              <Link href="#" className="hover:text-black transition">Privacy</Link>
-              <Link href="#" className="hover:text-black transition">Terms</Link>
+              <Link href="/privacy" className="hover:text-black transition">Privacy</Link>
+              <Link href="/terms" className="hover:text-black transition">Terms</Link>
               <Link href="#" className="hover:text-black transition">Instagram</Link>
             </div>
           </div>

@@ -16,7 +16,7 @@ const UniversalCommerceSchema = new mongoose.Schema({
   // Real-time Pricing for AI Negotiation
   dynamicPricing: {
     baseRate: { type: Number, required: true },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'USDC' },
     loyaltyDiscountEligible: { type: Boolean, default: true },
     priceValidUntil: { type: Date }
   },

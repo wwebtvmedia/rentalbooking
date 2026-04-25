@@ -8,9 +8,17 @@ export default function PaymentPage() {
   const router = useRouter();
   const { bookingId } = router.query;
   const [booking, setBooking] = useState<any>(null);
+  const [apartment, setApartment] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState('');
+  const [showCrypto, setShowCrypto] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -18,7 +26,14 @@ export default function PaymentPage() {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
         const res = await axios.get(`${base}/bookings/${bookingId}`);
+        console.log('PAYMENT_PAGE_BOOKING_LOADED:', res.data);
         setBooking(res.data);
+        
+        // Fetch apartment for ethAddress
+        if (res.data.apartmentId) {
+          const aptRes = await axios.get(`${base}/apartments/${res.data.apartmentId}`);
+          setApartment(aptRes.data);
+        }
       } catch (err: any) {
         setError(err.response?.data?.error || err.message);
       }
@@ -47,6 +62,59 @@ export default function PaymentPage() {
           console.warn('Stripe client libs not available');
         }
       }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const payWithUSDC = async () => {
+    if (!apartment?.ethAddress) return alert('This residence is not configured for USDC payments');
+    if (!(window as any).ethereum) return alert('Please install MetaMask to pay with USDC');
+    
+    setLoading(true);
+    try {
+      const eth = (window as any).ethereum;
+      const accounts = await eth.request({ method: 'eth_requestAccounts' });
+      const from = accounts[0];
+      
+      // Simple transfer of ETH-like value for demo, 
+      // In production, use ethers.js to call USDC.transfer(to, amount)
+      // For this prototype, we'll prompt for transaction hash after opening wallet
+      const txParams = {
+        from,
+        to: apartment.ethAddress,
+        value: '0x0', // 0 ETH
+        data: '0x', // No data
+      };
+
+      const hash = await eth.request({
+        method: 'eth_sendTransaction',
+        params: [txParams],
+      });
+
+      if (hash) {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash: hash, currency: 'USDC' });
+        alert('Transaction submitted! Redirecting to calendar...');
+        router.push('/calendar');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitTxHash = async () => {
+    if (!txHash) return alert('Please enter the transaction hash');
+    setLoading(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash, currency: 'USDC' });
+      alert('Payment recorded. Redirecting...');
+      router.push('/calendar');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message);
     } finally {
@@ -125,23 +193,88 @@ export default function PaymentPage() {
               </div>
             )}
 
+            {mounted && (
             <div className="space-y-4">
               <button 
                 onClick={startPayment} 
                 disabled={loading || !booking || !booking.depositAmount} 
                 className="btn btn-primary w-full py-4 text-lg"
               >
-                {loading ? 'Processing...' : 'Secure Checkout'}
+                {loading ? 'Processing...' : 'Pay with Credit Card'}
               </button>
+              
+              <button 
+                onClick={() => setShowCrypto(!showCrypto)} 
+                className="btn btn-outline w-full py-3 flex items-center justify-center gap-2"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 6V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15 9.5C15 8.67157 13.6569 8 12 8C10.3431 8 9 8.67157 9 9.5C9 10.3284 10.3431 11 12 11C13.6569 11 15 11.6716 15 12.5C15 13.3284 13.6569 14 12 14C10.3431 14 9 13.3284 9 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {showCrypto ? 'Hide Crypto Options' : 'Pay with USDC (UCP Compatible)'}
+              </button>
+
+              {showCrypto && (
+                <div className="mt-6 p-6 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-6 animate-fade-in">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Pay with USDC</p>
+                    <p className="text-xs text-blue-700">Send exactly ${booking ? (booking.depositAmount / 100).toFixed(2) : '0.00'} USDC to the address below</p>
+                  </div>
+                  
+                  {apartment?.ethAddress ? (
+                    <div className="space-y-4">
+                      <div className="bg-white p-3 rounded-lg border border-blue-200 break-all text-center font-mono text-[10px]">
+                        {apartment.ethAddress}
+                      </div>
+                      
+                      <button 
+                        onClick={payWithUSDC}
+                        disabled={loading}
+                        className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
+                      >
+                        <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" width="18" alt="USDC" />
+                        Pay with MetaMask
+                      </button>
+
+                      <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-blue-200"></div></div>
+                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-blue-50 px-2 text-blue-400 font-bold">or provide hash</span></div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <input 
+                          className="input !bg-white !border-blue-200 text-xs" 
+                          placeholder="Transaction Hash (0x...)" 
+                          value={txHash}
+                          onChange={(e) => setTxHash(e.target.value)}
+                        />
+                        <button 
+                          onClick={submitTxHash}
+                          disabled={loading || !txHash}
+                          className="w-full btn btn-outline !border-blue-300 !text-blue-700 !py-2 text-xs"
+                        >
+                          Confirm Transaction Hash
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-center text-xs text-red-500 font-medium italic">
+                      This residence has not yet provided a wallet address for USDC payments.
+                    </p>
+                  )}
+                </div>
+              )}
               
               <button 
                 onClick={simulateSuccess} 
                 disabled={loading} 
-                className="btn btn-outline w-full py-3"
+                className="w-full text-[10px] text-gray-400 hover:text-gray-600 transition underline underline-offset-4 decoration-dotted"
               >
-                Simulate Payment Success (Dev Only)
+                Dev helper: Simulate success
               </button>
             </div>
+            )}
 
             {error && (
               <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm flex items-center gap-2">

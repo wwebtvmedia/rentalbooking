@@ -15,7 +15,10 @@ const bookingSchema = new mongoose.Schema({
   depositHeld: { type: Boolean, default: false },
   depositCaptured: { type: Boolean, default: false },
   depositCapturedAt: { type: Date },
-  depositRefundedAt: { type: Date }
+  depositRefundedAt: { type: Date },
+  // Crypto Payment Support
+  paymentCurrency: { type: String, default: 'USD' }, // 'USD' for Stripe, 'USDC' for crypto
+  cryptoTxHash: { type: String }
 }, { timestamps: true });
 
 const Booking = mongoose.model("Booking", bookingSchema);

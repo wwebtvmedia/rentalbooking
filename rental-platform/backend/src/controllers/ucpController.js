@@ -55,7 +55,7 @@ export const registerItem = async (req, res) => {
       },
       dynamicPricing: {
         baseRate,
-        currency: 'USD',
+        currency: 'USDC',
       }
     });
     res.status(201).json(ucpRecord);

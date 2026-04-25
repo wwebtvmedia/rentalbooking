@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function AdminPage() {
   const [list, setList] = useState<any[]>([]);
-  const [form, setForm] = useState<any>({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' });
+  const [form, setForm] = useState<any>({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '', ethAddress: '' });
   const [msg, setMsg] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
@@ -44,7 +44,8 @@ export default function AdminPage() {
         address: form.address,
         photos: photosArr,
         pricePerNight: Number(form.pricePerNight),
-        depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined,
+        depositAmount: form.depositAmount ? Math.round(Number(form.depositAmount) * 100) : undefined,
+        ethAddress: form.ethAddress,
         lat: form.lat ? Number(form.lat) : undefined,
         lon: form.lon ? Number(form.lon) : undefined,
         rules: form.rules
@@ -57,7 +58,7 @@ export default function AdminPage() {
         await axios.post(`${base}/apartments`, body, { headers: { Authorization: `Bearer ${token}` } });
         setMsg('Created');
       }
-      setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' });
+      setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '', ethAddress: '' });
       setUploadedPhotos([]);
       loadList();
     } catch (err: any) {
@@ -109,6 +110,16 @@ export default function AdminPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Price per night ($)</label>
                   <input type="number" className="input" value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Guarantee Deposit ($)</label>
+                  <input type="number" className="input" placeholder="e.g. 500" value={form.depositAmount} onChange={(e) => setForm({ ...form, depositAmount: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ethereum Wallet Address (USDC)</label>
+                  <input className="input" placeholder="0x..." value={form.ethAddress} onChange={(e) => setForm({ ...form, ethAddress: e.target.value })} />
                 </div>
 
                 <div>
@@ -168,7 +179,7 @@ export default function AdminPage() {
                     {editingId ? 'Update Listing' : 'Create Listing'}
                   </button>
                   {editingId && (
-                    <button onClick={() => { setEditingId(null); setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' }); setUploadedPhotos([]); }} className="btn btn-outline">
+                    <button onClick={() => { setEditingId(null); setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '', ethAddress: '' }); setUploadedPhotos([]); }} className="btn btn-outline">
                       Cancel
                     </button>
                   )}
@@ -200,7 +211,7 @@ export default function AdminPage() {
                       <div className="flex gap-2">
                         <button className="p-2 text-gray-600 hover:text-blue-600 transition" onClick={() => {
                           setEditingId(a._id);
-                          setForm({ name: a.name, description: a.description || '', smallDescription: a.smallDescription || '', address: a.address || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', depositAmount: a.depositAmount ? (a.depositAmount / 100) : '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
+                          setForm({ name: a.name, description: a.description || '', smallDescription: a.smallDescription || '', address: a.address || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', depositAmount: a.depositAmount ? (a.depositAmount / 100) : '', ethAddress: a.ethAddress || '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
                           setUploadedPhotos(a.photos || []);
                           window.scrollTo({top: 0, behavior: 'smooth'});
                         }}>

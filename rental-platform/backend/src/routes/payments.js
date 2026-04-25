@@ -1,5 +1,6 @@
 import express from 'express';
 import Booking from '../models/Booking.js';
+import Apartment from '../models/Apartment.js';
 import { requireRole } from '../auth/index.js';
 
 let stripe;
@@ -129,6 +130,27 @@ router.post('/:bookingId/simulate-success', async (req, res) => {
     booking.depositHeld = true;
     await booking.save();
     return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Record a crypto payment (USDC)
+router.post('/record-crypto-payment', async (req, res) => {
+  try {
+    const { bookingId, txHash, currency } = req.body;
+    if (!bookingId || !txHash) return res.status(400).json({ error: 'bookingId and txHash required' });
+    
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    
+    booking.cryptoTxHash = txHash;
+    booking.paymentCurrency = currency || 'USDC';
+    booking.paymentStatus = 'succeeded';
+    booking.depositHeld = true;
+    
+    await booking.save();
+    return res.json({ ok: true, booking });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
