@@ -2,6 +2,7 @@ import express from 'express';
 import Apartment from '../models/Apartment.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
 import { geocodeAddress } from '../lib/geocoder.js';
+import { validate, apartmentSchema } from '../lib/validation.js';
 
 const router = express.Router();
 // ensure auth middleware runs so requireRole can read req.user
@@ -32,7 +33,7 @@ router.get('/:id', async (req, res) => {
 
 
 // POST /apartments - admin only
-router.post('/', requireRole('admin'), async (req, res) => {
+router.post('/', requireRole('admin'), validate(apartmentSchema), async (req, res) => {
   try {
     const photos = Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : []);
     let lat = req.body.lat ? Number(req.body.lat) : undefined;
@@ -69,7 +70,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
 });
 
 // PUT /apartments/:id - admin only
-router.put('/:id', requireRole('admin'), async (req, res) => {
+router.put('/:id', requireRole('admin'), validate(apartmentSchema), async (req, res) => {
   try {
     const apt = await Apartment.findById(req.params.id);
     if (!apt) return res.status(404).json({ error: 'Not found' });

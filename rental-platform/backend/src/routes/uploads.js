@@ -41,9 +41,21 @@ router.post('/', async (req, res, next) => {
   if (req.is('application/json')) {
     const { b64, filename } = req.body || {};
     if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename in JSON body' });
+    
+    // Simple extension check
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
+    const ext = path.extname(filename).toLowerCase();
+    if (!allowedExts.includes(ext)) {
+      return res.status(400).json({ error: 'Only image files allowed' });
+    }
+
     try {
       const buf = Buffer.from(b64, 'base64');
-      const ext = path.extname(filename) || '.bin';
+      // Size limit (5MB)
+      if (buf.length > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: 'File too large (max 5MB)' });
+      }
+      
       const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
       const outPath = path.join(uploadDir, newName);
       await fs.promises.writeFile(outPath, buf);

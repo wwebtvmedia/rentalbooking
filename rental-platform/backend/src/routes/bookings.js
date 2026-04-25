@@ -2,6 +2,7 @@ import express from "express";
 import Booking from "../models/Booking.js";
 import Availability from "../models/Availability.js";
 import { authMiddleware, requireRole } from "../auth/index.js";
+import { validate, bookingSchema } from "../lib/validation.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -33,7 +34,7 @@ router.get('/:id', async (req, res) => {
 
 // Create booking (checks conflicts and creates blocking availability)
 // Creating a booking is still allowed to unauthenticated users (public booking).
-router.post("/", async (req, res) => {
+router.post("/", validate(bookingSchema), async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let booking;

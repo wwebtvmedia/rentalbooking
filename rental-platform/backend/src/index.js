@@ -9,6 +9,8 @@ import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
 import { getMcpServer } from "./mcp/server.js";
 import cors from "cors";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 
 const mcpTransports = new Map();
 
@@ -36,6 +38,22 @@ async function handleMcpMessages(req, res) {
 }
 
 const app = express();
+
+// Security Headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Required to allow images to load in frontend
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'test', // Skip rate limiting in tests
+});
+app.use(limiter);
+
 // Allow the frontend origin. Adjust or restrict as needed for production.
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true }));
 

@@ -1,10 +1,12 @@
 import express from 'express';
 import Apartment from '../models/Apartment.js';
 import { logger } from '../logger.js';
+import { requireRole, authMiddleware } from '../auth/index.js';
 
 const router = express.Router();
+router.use(authMiddleware);
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin'), async (req, res) => {
   try {
     if (req.query.force === 'true') {
       await Apartment.deleteMany({});

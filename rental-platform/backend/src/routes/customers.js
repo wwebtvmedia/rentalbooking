@@ -1,6 +1,7 @@
 import express from "express";
 import Customer from "../models/Customer.js";
 import { authMiddleware, requireRole } from "../auth/index.js";
+import { validate, customerSchema } from "../lib/validation.js";
 
 const router = express.Router();
 
@@ -22,10 +23,9 @@ router.get("/", async (req, res) => {
 });
 
 // POST /customers - create a customer (public). If email exists, return existing customer.
-router.post("/", async (req, res) => {
+router.post("/", validate(customerSchema), async (req, res) => {
   try {
     const { fullName, email } = req.body;
-    if (!fullName || !email) return res.status(400).json({ error: 'Missing name/email' });
     const existing = await Customer.findOne({ email });
     if (existing) return res.status(200).json(existing);
     const customer = await Customer.create({ fullName, email });
