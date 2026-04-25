@@ -95,6 +95,13 @@ export default function Home() {
     setGuest(null);
   };
 
+  const getImgUrl = (path: string) => {
+    if (!path) return '/placeholder.png';
+    if (path.startsWith('http')) return path;
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+    return `${base}${path}`;
+  };
+
   return (
     <div className="fade-in-up">
       <Head>
@@ -207,7 +214,7 @@ export default function Home() {
                 {apartments.map((apt) => (
                   <Link href={`/apartment?id=${apt._id || apt.id}`} key={apt._id || apt.id} className="group cursor-pointer">
                     <div className="relative aspect-[4/5] mb-8 overflow-hidden rounded-lg">
-                      <img src={apt.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={apt.name} />
+                      <img src={getImgUrl(apt.photos?.[0])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={apt.name} />
                       <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
                       <div className="absolute top-8 left-8">
                         <span className="bg-white/90 backdrop-blur-md px-4 py-2 text-[10px] font-black uppercase tracking-widest shadow-sm">Reserve</span>

@@ -27,6 +27,13 @@ export default function ApartmentPage() {
     fetch();
   }, [id]);
 
+  const getImgUrl = (path: string) => {
+    if (!path) return '/placeholder.png';
+    if (path.startsWith('http')) return path;
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+    return `${base}${path}`;
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black tracking-[0.4em] uppercase text-[10px]">Refining View...</div>;
   if (error || !apartment) return <div className="min-h-screen flex items-center justify-center text-red-600 font-bold">{error || 'Residence not found'}</div>;
 
@@ -70,19 +77,19 @@ export default function ApartmentPage() {
             {/* Mosaic Gallery - Ultra Refined */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[400px] lg:h-[750px] mb-24 fade-in-up overflow-hidden rounded-xl shadow-2xl">
               <div className="lg:col-span-2 relative group cursor-pointer">
-                <img src={apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Main" />
+                <img src={getImgUrl(apartment.photos?.[0])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Main" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
               </div>
               <div className="hidden lg:grid grid-cols-1 grid-rows-2 gap-6">
                 <div className="relative group cursor-pointer overflow-hidden">
-                  <img src={apartment.photos?.[1]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+                  <img src={getImgUrl(apartment.photos?.[1])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
                 </div>
                 <div className="relative group cursor-pointer overflow-hidden">
-                  <img src={apartment.photos?.[2]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+                  <img src={getImgUrl(apartment.photos?.[2])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
                 </div>
               </div>
               <div className="hidden lg:block relative group cursor-pointer overflow-hidden">
-                <img src={apartment.photos?.[3] || apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+                <img src={getImgUrl(apartment.photos?.[3] || apartment.photos?.[0])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
               </div>
             </div>
 
