@@ -300,4 +300,13 @@ describe('E2E non-regression tests', () => {
     const pi = await request.post('/payments/create-intent').send({ bookingId: bRes.body._id }).expect(200);
     expect(pi.body.paymentIntentId).toBeTruthy();
   });
+
+  test('MCP SSE endpoint is accessible', async () => {
+    // We use a custom fetch to verify the headers without waiting for the full response
+    // since SSE is a long-lived connection.
+    const res = await fetch('http://localhost:5001/mcp');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/event-stream');
+    // Important: we don't await res.text() or res.json() as it would hang.
+  });
 });

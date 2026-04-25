@@ -155,6 +155,7 @@ export default function AdminPage() {
                       }
                     }}>Upload</button>
                   </div>
+                  <input className="input text-xs mb-2" placeholder="URL1, URL2, ..." value={form.photos} onChange={(e) => setForm({ ...form, photos: e.target.value })} />
                   <div className="flex flex-wrap gap-2 mt-2">
                     {uploadedPhotos.map(p => (
                       <img key={p} src={p} className="w-16 h-12 object-cover rounded-md border border-gray-200" alt="Preview" />

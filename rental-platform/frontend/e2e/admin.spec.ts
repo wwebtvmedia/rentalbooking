@@ -26,6 +26,9 @@ test('admin can upload photo and create apartment', async ({ page }) => {
 
   // fill price
   await page.locator('input[type="number"]').first().fill('111');
+
+  // fill photos (at least 3 required)
+  await page.getByPlaceholder('URL1, URL2, ...').fill('http://example.com/1.jpg, http://example.com/2.jpg, http://example.com/3.jpg');
   
   // provide a token for the prompt and click create
   await page.evaluate(() => { (window as any).prompt = () => 'admintoken'; });
@@ -38,5 +41,5 @@ test('admin can upload photo and create apartment', async ({ page }) => {
     createBtn.click(),
   ]);
   
-  await expect(page.getByText('Created')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('Created', { exact: false })).toBeVisible({ timeout: 10000 });
 });

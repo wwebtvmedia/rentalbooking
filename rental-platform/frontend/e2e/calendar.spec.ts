@@ -19,7 +19,7 @@ test('can open booking modal and submit booking', async ({ page }) => {
   await page.goto('/calendar');
   await page.waitForTimeout(1000);
   
-  await expect(page.getByRole('heading', { name: 'Reserve your stay' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('heading', { name: 'Schedule Your Stay' })).toBeVisible({ timeout: 15000 });
 
   // open modal using the Custom Request button
   const customRequestBtn = page.getByRole('button', { name: 'Custom Request' });
