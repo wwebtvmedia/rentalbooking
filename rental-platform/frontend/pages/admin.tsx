@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Head from 'next/head';
+import Link from 'next/link';
 
 export default function AdminPage() {
   const [list, setList] = useState<any[]>([]);
@@ -23,7 +25,6 @@ export default function AdminPage() {
 
   const create = async () => {
     try {
-      console.log('create() called', form, uploadedPhotos);
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
       const token = window.prompt('Admin token');
       if (!token) return setMsg('Admin token required');
@@ -58,140 +59,163 @@ export default function AdminPage() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Admin - Apartments</h1>
-      <div style={{ display: 'flex', gap: 20 }}>
-        <div style={{ minWidth: 420 }}>
-          <h2>Create apartment</h2>
-          <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-          <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-          <label>Photos (comma separated URLs)<input value={form.photos} onChange={(e) => setForm({ ...form, photos: e.target.value })} /></label>
-          <label>Small description (short)<input value={form.smallDescription} onChange={(e) => setForm({ ...form, smallDescription: e.target.value })} /></label>
-          <label>Address<input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /> <button onClick={() => {
-            // try to get user's GPS coordinates via browser API
-            if (!navigator.geolocation) return setMsg('Geolocation not available in this browser');
-            navigator.geolocation.getCurrentPosition((pos) => {
-              setForm(prev => ({ ...prev, lat: String(pos.coords.latitude), lon: String(pos.coords.longitude) }));
-              setMsg('Location filled from GPS');
-            }, (err) => setMsg('Failed to get GPS: ' + err.message));
-          }}>Use GPS</button> <button onClick={async () => {
-            // geocode the current address via backend
-            if (!form.address) return setMsg('Address is empty');
-            try {
-              const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-              const res = await fetch(`${base}/geocode?address=${encodeURIComponent(form.address)}`);
-              const j = await res.json();
-              if (!j.ok) return setMsg('Geocoding failed (no results)');
-              setForm(prev => ({ ...prev, lat: String(j.lat), lon: String(j.lon), address: j.display_name || prev.address }));
-              setMsg('Address geocoded');
-            } catch (err: any) {
-              setMsg('Geocode error: ' + err.message);
-            }
-          }}>Geocode</button></label>
-          <label>Or upload photo<input ref={fileRef} type="file" accept="image/*" /></label>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={async () => {
-              if (!fileRef.current?.files?.length) return setMsg('No file selected');
-              const file = fileRef.current.files[0];
-              const reader = new FileReader();
-              reader.onload = async () => {
-                const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-                try {
-                  // try multipart first
-                  const fd = new FormData();
-                  fd.append('file', file);
-                  const res = await fetch(`${base}/uploads`, { method: 'POST', body: fd }).catch((e) => { console.error('fetch error', e); return undefined as any; });
-                  if (res && res.ok) {
-                    const json = await res.json();
-                    setUploadedPhotos(prev => [...prev, json.url]);
-                    setMsg('Uploaded');
-                    return;
-                  }
-                  // fallback to base64 JSON if multipart not supported
-                  const b64 = (reader.result as string).split(',')[1];
-                  const res2 = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file.name, b64 }) }).catch((e) => { console.error('fetch error 2', e); return undefined as any; });
-                  if (res2 && res2.ok) {
-                    const json = await res2.json();
-                    setUploadedPhotos(prev => [...prev, json.url]);
-                    setMsg('Uploaded');
-                  } else {
-                    const txt = res2 ? await res2.text() : 'no response';
-                    setMsg('Upload failed: ' + txt);
-                  }
-                } catch (err: any) {
-                  setMsg(err.message);
-                }
-              };
-              reader.readAsDataURL(file);
-            }}>Upload selected</button>
-          </div>
-          <div style={{ marginTop: 8 }}>
-            {uploadedPhotos.map((p) => <img key={p} src={p} style={{ width: 120, height: 80, objectFit: 'cover', marginRight: 8 }} />)}
-          </div>
-          <label>Price per night<input type="number" value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} /></label>
-          
-          <div style={{ marginTop: 8 }}>
-            <button onClick={() => { setEditingId(null); setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' }); setUploadedPhotos([]); setMsg('Ready to create a new apartment'); }}>New</button>
-            <button onClick={create}>{editingId ? 'Update' : 'Create'}</button>
-            {editingId && <button onClick={async () => {
-              if (!editingId) return; 
-              const confirmDel = window.confirm('Delete this apartment?');
-              if (!confirmDel) return;
-              const token = window.prompt('Admin token');
-              if (!token) return setMsg('Admin token required');
-              try {
-                const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-                await axios.delete(`${base}/apartments/${editingId}`, { headers: { Authorization: `Bearer ${token}` } });
-                setMsg('Deleted');
-                setEditingId(null);
-                setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' });
-                setUploadedPhotos([]);
-                loadList();
-              } catch (err: any) { setMsg(err.response?.data?.error || err.message); }
-            }}>Delete</button>}
-          </div>
-          <label>Deposit amount (fixed, USD)<input type="number" value={form.depositAmount} onChange={(e) => setForm({ ...form, depositAmount: e.target.value })} /></label>
-          <label>Rules<textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} /></label>
-          <label>Latitude<input value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} /></label>
-          <label>Longitude<input value={form.lon} onChange={(e) => setForm({ ...form, lon: e.target.value })} /></label>
-          {msg && <div style={{ marginTop: 8 }}>{msg}</div>}
+    <div className="min-h-screen bg-[#f8f9fa]">
+      <Head>
+        <title>Admin - dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+      </Head>
+
+      <header className="site-header">
+        <div className="container site-header-inner">
+          <Link href="/" className="flex items-center">
+            <span className="text-2xl mr-2">🏠</span>
+            <span className="brand-text">dreamflat Admin</span>
+          </Link>
+          <Link href="/" className="btn btn-outline text-xs py-1 px-3">
+            Back to site
+          </Link>
         </div>
-        <div style={{ flex: 1 }}>
-          <h2>Existing apartments</h2>
-          <div>
-            {list.map((a) => (
-              <div key={a._id} style={{ border: '1px solid #ddd', padding: 8, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      </header>
+
+      <main className="container py-10">
+        <div className="flex flex-col lg:flex-row gap-10">
+          {/* Form Side */}
+          <div className="lg:w-1/3">
+            <div className="card p-8 sticky top-24">
+              <h2 className="text-2xl font-bold mb-6">{editingId ? 'Edit Apartment' : 'Create Apartment'}</h2>
+              
+              <div className="space-y-4">
                 <div>
-                  <strong>{a.name}</strong>
-                  <div>{a.description}</div>
-                  <div>Price/night: ${a.pricePerNight}</div>
-                  <div>Deposit: {a.depositAmount ? `$${a.depositAmount / 100}` : '—'}</div>
-                  <div>Rules: {a.rules}</div>
-                  {a.photos && a.photos.length > 0 && <img src={a.photos[0]} alt="photo" style={{ width: 160, height: 100, objectFit: 'cover' }} />}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apartment Name</label>
+                  <input className="input" placeholder="Luxury Loft" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <button onClick={() => {
-                    setEditingId(a._id);
-                    setForm({ name: a.name, description: a.description || '', smallDescription: a.smallDescription || '', address: a.address || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', depositAmount: a.depositAmount ? (a.depositAmount / 100) : '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
-                    setUploadedPhotos(a.photos || []);
-                    window.scrollTo(0,0);
-                  }}>Edit</button>
-                  <button onClick={async () => {
-                    const token = window.prompt('Admin token');
-                    if (!token) return setMsg('Admin token required');
-                    try {
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea className="input h-32" placeholder="Full description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price per night ($)</label>
+                  <input type="number" className="input" value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <div className="flex gap-2 mb-2">
+                    <input className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="btn btn-outline py-1 px-3 text-xs" onClick={() => {
+                      if (!navigator.geolocation) return setMsg('Geolocation not available');
+                      navigator.geolocation.getCurrentPosition((pos) => {
+                        setForm(prev => ({ ...prev, lat: String(pos.coords.latitude), lon: String(pos.coords.longitude) }));
+                        setMsg('GPS location updated');
+                      });
+                    }}>Use GPS</button>
+                    <button className="btn btn-outline py-1 px-3 text-xs" onClick={async () => {
+                      if (!form.address) return setMsg('Address is empty');
                       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-                      await axios.delete(`${base}/apartments/${a._id}`, { headers: { Authorization: `Bearer ${token}` } });
-                      setMsg('Deleted');
-                      loadList();
-                    } catch (err: any) { setMsg(err.response?.data?.error || err.message); }
-                  }}>Delete</button>
+                      const res = await fetch(`${base}/geocode?address=${encodeURIComponent(form.address)}`);
+                      const j = await res.json();
+                      if (j.ok) {
+                        setForm(prev => ({ ...prev, lat: String(j.lat), lon: String(j.lon), address: j.display_name || prev.address }));
+                        setMsg('Geocoded successfully');
+                      }
+                    }}>Geocode</button>
+                  </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+                  <div className="flex gap-2 mb-2">
+                    <input ref={fileRef} type="file" accept="image/*" className="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    <button className="btn btn-outline py-1 px-3 text-xs" onClick={async () => {
+                      if (!fileRef.current?.files?.length) return;
+                      const file = fileRef.current.files[0];
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+                      const res = await fetch(`${base}/uploads`, { method: 'POST', body: fd });
+                      if (res.ok) {
+                        const json = await res.json();
+                        setUploadedPhotos(prev => [...prev, json.url]);
+                        setMsg('Photo uploaded');
+                      }
+                    }}>Upload</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {uploadedPhotos.map(p => (
+                      <img key={p} src={p} className="w-16 h-12 object-cover rounded-md border border-gray-200" alt="Preview" />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button onClick={create} className="btn btn-primary flex-1">
+                    {editingId ? 'Update Listing' : 'Create Listing'}
+                  </button>
+                  {editingId && (
+                    <button onClick={() => { setEditingId(null); setForm({ name: '', description: '', smallDescription: '', address: '5 rue Honoré d\'Estienne d\'Orves, Suresnes', photos: '', pricePerNight: '', rules: '', lat: '', lon: '', depositAmount: '' }); setUploadedPhotos([]); }} className="btn btn-outline">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+
+                {msg && <p className={`text-sm mt-2 ${msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error') ? 'text-red-500' : 'text-blue-500'}`}>{msg}</p>}
               </div>
-            ))}
+            </div>
+          </div>
+
+          {/* List Side */}
+          <div className="lg:w-2/3">
+            <h2 className="text-2xl font-bold mb-6">Existing Listings</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {list.map((a) => (
+                <div key={a._id} className="card group">
+                  <div className="aspect-video relative bg-gray-200">
+                    {a.photos?.[0] ? (
+                      <img src={a.photos[0]} alt={a.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400">No image</div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-bold text-lg text-[#202124] mb-1">{a.name}</h3>
+                    <p className="text-sm text-[#5f6368] mb-4 line-clamp-2">{a.description}</p>
+                    <div className="flex justify-between items-center mt-auto">
+                      <span className="font-bold text-blue-600">${a.pricePerNight}<span className="text-xs text-gray-500 font-normal">/night</span></span>
+                      <div className="flex gap-2">
+                        <button className="p-2 text-gray-600 hover:text-blue-600 transition" onClick={() => {
+                          setEditingId(a._id);
+                          setForm({ name: a.name, description: a.description || '', smallDescription: a.smallDescription || '', address: a.address || '', photos: (a.photos || []).join(','), pricePerNight: a.pricePerNight || '', depositAmount: a.depositAmount ? (a.depositAmount / 100) : '', rules: a.rules || '', lat: a.lat || '', lon: a.lon || '' });
+                          setUploadedPhotos(a.photos || []);
+                          window.scrollTo({top: 0, behavior: 'smooth'});
+                        }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button className="p-2 text-gray-600 hover:text-red-600 transition" onClick={async () => {
+                          const token = window.prompt('Admin token');
+                          if (!token) return;
+                          const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+                          await axios.delete(`${base}/apartments/${a._id}`, { headers: { Authorization: `Bearer ${token}` } });
+                          loadList();
+                        }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

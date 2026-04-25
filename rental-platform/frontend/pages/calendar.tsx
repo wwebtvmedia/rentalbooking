@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,6 +7,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import FullCalendar from '@fullcalendar/react';
 import axios from 'axios';
 import BookingModal from '../components/BookingModal';
+import Link from 'next/link';
 
 const CalendarPage = () => {
   const calendarRef = useRef<any>(null);
@@ -46,8 +46,6 @@ const CalendarPage = () => {
       if (end) params.to = end;
       
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      console.log('Fetching calendar events from:', `${base}/calendar/events`, 'with params:', params);
-      
       const res = await axios.get(`${base}/calendar/events`, { params });
       setEvents(res.data || []);
     } catch (err: any) {
@@ -60,7 +58,6 @@ const CalendarPage = () => {
   };
 
   useEffect(() => {
-    // Only fetch events if apartmentId is available
     if (apartmentId) {
       fetchEvents();
     }
@@ -86,11 +83,10 @@ const CalendarPage = () => {
       }, { headers });
       const booking = resp.data;
       if (booking.depositAmount && booking.depositAmount > 0) {
-        // redirect to payment page to complete deposit
         window.location.href = `/payments/${booking._id}`;
         return;
       }
-      setToast('Booking created');
+      setToast('Booking created successfully');
       fetchEvents();
       setTimeout(() => setToast(null), 3000);
     } catch (err: any) {
@@ -102,11 +98,9 @@ const CalendarPage = () => {
 
   const handleEventClick = async (clickInfo: any) => {
     const ext = clickInfo.event.extendedProps;
-
-    // show apartment info if available
     if (ext.apartment) {
       const apt = ext.apartment;
-      const info = `${apt.name}\nPrice/night: $${apt.pricePerNight || 0}\n${apt.description || ''}\nRules: ${apt.rules || ''}`;
+      const info = `${apt.name}\nPrice/night: $${apt.pricePerNight || 0}\n${apt.description || ''}`;
       if (apt.lat && apt.lon) {
         if (window.confirm(info + '\n\nOpen location in maps?')) {
           window.open(`https://www.openstreetmap.org/?mlat=${apt.lat}&mlon=${apt.lon}`,'_blank');
@@ -117,8 +111,7 @@ const CalendarPage = () => {
     }
 
     if (ext.type === 'availability') {
-      // admins can delete blocked slots via prompt
-      const token = window.prompt('Admin token to modify slot (leave blank to cancel)');
+      const token = window.prompt('Admin token to modify slot');
       if (!token) return;
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
@@ -134,7 +127,6 @@ const CalendarPage = () => {
       const c = window.confirm('Cancel this booking?');
       if (!c) return;
       try {
-        // try cancelling as logged-in guest if token exists
         const token = localStorage.getItem('token');
         const headers: any = {};
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -143,9 +135,8 @@ const CalendarPage = () => {
         alert('Booking cancelled');
         fetchEvents();
       } catch (err: any) {
-        // if failed due to permissions, allow admin token prompt
         if (err.response?.status === 403) {
-          const adminToken = window.prompt('Admin token to cancel (leave blank to abort)');
+          const adminToken = window.prompt('Admin token to cancel');
           if (!adminToken) return;
           try {
             const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
@@ -165,119 +156,119 @@ const CalendarPage = () => {
   return (
     <>
       <Head>
-        <title>Book Your Dates | Luxury Apartment Rental</title>
-        <meta name="description" content="Select your check-in and check-out dates to complete your booking" />
+        <title>Select Dates - dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
-      <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Select Your Dates</h1>
-              {apartment && (
-                <p className="text-gray-600 mt-2">{apartment.name}</p>
-              )}
-            </div>
+      
+      <div className="min-h-screen bg-[#f8f9fa]">
+        <header className="site-header">
+          <div className="container site-header-inner">
+            <Link href="/" className="flex items-center">
+              <span className="text-2xl mr-2">🏠</span>
+              <span className="brand-text">dreamflat</span>
+            </Link>
             <button 
               onClick={() => router.back()}
-              className="text-blue-600 hover:text-blue-700 font-semibold"
+              className="btn btn-outline text-xs py-1 px-3"
             >
               ← Back
             </button>
           </div>
-        </div>
+        </header>
+
+        <main className="container py-10">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-[#202124]">Select your dates</h1>
+              {apartment && (
+                <p className="text-[#5f6368] mt-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                  Booking for: <span className="font-medium text-[#202124]">{apartment.name}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <div className="card p-6">
+                  <FullCalendar
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
+                    selectable={true}
+                    selectMirror={true}
+                    select={handleDateSelect}
+                    eventClick={handleEventClick}
+                    events={events}
+                    ref={calendarRef}
+                    height="auto"
+                    themeSystem="standard"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="card p-6">
+                  <h3 className="font-bold text-[#202124] mb-4">Quick Actions</h3>
+                  <button 
+                    onClick={() => { 
+                      setModalRange({ 
+                        start: new Date().toISOString(), 
+                        end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() 
+                      }); 
+                      setModalOpen(true); 
+                    }} 
+                    className="btn btn-primary w-full py-3 mb-3"
+                  >
+                    + Create custom booking
+                  </button>
+                  <p className="text-xs text-[#5f6368] text-center">
+                    Tip: You can also click and drag directly on the calendar to select dates.
+                  </p>
+                </div>
+
+                <div className="card p-6">
+                  <h3 className="font-bold text-[#202124] mb-4">Legend</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 bg-[#3788d8] rounded"></div>
+                      <span className="text-sm text-[#5f6368]">Available slots</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 bg-[#ff9f89] rounded"></div>
+                      <span className="text-sm text-[#5f6368]">Your bookings</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 bg-[#ef4444] rounded"></div>
+                      <span className="text-sm text-[#5f6368]">Unavailable / Blocked</span>
+                    </div>
+                  </div>
+                </div>
+
+                {toast && (
+                  <div className="p-4 bg-green-50 border border-green-100 text-green-700 rounded-xl text-sm flex items-center gap-2 animate-pulse">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    {toast}
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-blue-900 text-sm">
-            💡 Click on dates to select your check-in and check-out times, or use the "New booking" button to create a custom booking.
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 mb-6">
-          <button 
-            onClick={() => { 
-              setModalRange({ 
-                start: new Date().toISOString(), 
-                end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
-              }); 
-              setModalOpen(true); 
-            }} 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg transition duration-200"
-          >
-            + New Booking
-          </button>
-          {apartment && (
-            <button 
-              onClick={() => router.push(`/apartment?id=${apartment._id || apartment.id}`)}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition duration-200"
-            >
-              Back to Apartment
-            </button>
-          )}
-        </div>
-
-        {/* Toast */}
-        {toast && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-900 font-semibold">
-            ✓ {toast}
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-900 font-semibold">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 font-semibold">
-            ⏳ Loading calendar events...
-          </div>
-        )}        {/* Calendar */}
-        <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-          <div className="fc-wrapper" style={{ maxWidth: '100%' }}>
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth' }}
-              selectable={true}
-              selectMirror={true}
-              select={handleDateSelect}
-              eventClick={handleEventClick}
-              events={events}
-              ref={calendarRef}
-              height="auto"
-              contentHeight="auto"
-            />
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center gap-3 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span className="text-gray-700 font-medium">Available</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="w-4 h-4 bg-blue-500 rounded"></div>
-            <span className="text-gray-700 font-medium">Your Booking</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-gray-700 font-medium">Unavailable</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal */}
       <BookingModal
         open={modalOpen}
         start={modalRange.start}
@@ -286,7 +277,6 @@ const CalendarPage = () => {
         onClose={() => setModalOpen(false)}
         onSubmit={createBooking}
       />
-      </div>
     </>
   );
 };

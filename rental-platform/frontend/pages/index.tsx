@@ -93,242 +93,227 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>dreamflatbytreeforfive | Luxury Apartment Rentals | Premium Short-term Stays</title>
-        <meta name="description" content="Book beautiful, comfortable apartments for your next stay. Browse verified listings near Paris with instant booking on dreamflatbytreeforfive." />
+        <title>dreamflatbytreeforfive | Luxury Apartment Rentals</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="keywords" content="apartment rental, short-term stay, vacation rental, Paris area" />
-        <meta property="og:title" content="dreamflatbytreeforfive - Luxury Apartment Rentals" />
-        <meta property="og:description" content="Beautiful apartments available for your perfect stay" />
-        <meta property="og:type" content="website" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-        {/* Navigation */}
-        <nav className="sticky top-0 z-50 bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div className="flex items-center">
-              <Link href="/">
-                <h1 className="text-2xl font-bold text-blue-600 cursor-pointer">🏠 dreamflatbytreeforfive</h1>
-              </Link>
-            </div>
-            {guest && (
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Welcome, <span className="font-semibold text-gray-900">{guest.fullName}</span></p>
-                <button onClick={handleLogout} className="mt-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
-                  Logout
+      <div className="min-h-screen bg-[#f8f9fa]">
+        {/* Google-style Header */}
+        <header className="site-header">
+          <div className="container site-header-inner">
+            <Link href="/" className="flex items-center">
+              <span className="text-2xl mr-2">🏠</span>
+              <span className="brand-text">dreamflat</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              {guest ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">Hi, {guest.fullName.split(' ')[0]}</span>
+                  <button onClick={handleLogout} className="btn btn-outline text-xs py-1 px-3">
+                    Sign out
+                  </button>
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                    {guest.fullName[0]}
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => window.scrollTo({top: 500, behavior: 'smooth'})} className="btn btn-primary">
+                  Sign in
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </nav>
+        </header>
 
-        {!guest ? (
-          <>
-            {/* Hero Section */}
-            <section className="relative h-96 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-              <div className="absolute inset-0 bg-black opacity-40"></div>
-              <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center">
-                <h2 className="text-5xl font-bold mb-4">Welcome to dreamflatbytreeforfive</h2>
-                <p className="text-xl text-blue-100 mb-8">Discover beautiful apartments for your perfect getaway</p>
-              </div>
-            </section>
-
-            {/* Auth Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                {/* Login Card */}
-                <div className="bg-white rounded-lg shadow-md p-8 border-t-4 border-blue-600">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Sign In</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                      <input 
-                        type="email"
-                        placeholder="your@email.com" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                      />
+        <main>
+          {!guest ? (
+            <>
+              {/* Hero Section - Search focused */}
+              <section className="bg-white py-20 border-b border-gray-200">
+                <div className="container text-center">
+                  <h2 className="text-5xl font-bold text-[#202124] mb-6 tracking-tight">Find your next stay</h2>
+                  <p className="text-xl text-[#5f6368] mb-12 max-w-2xl mx-auto">Luxury apartments curated for comfort and style in the heart of Paris.</p>
+                  
+                  {/* Google Search Style Bar (Visual only for now) */}
+                  <div className="max-w-2xl mx-auto bg-white rounded-full shadow-lg border border-gray-200 p-2 flex items-center">
+                    <div className="flex-1 px-6 text-left border-r border-gray-200">
+                      <p className="text-xs font-bold text-gray-900 uppercase">Where</p>
+                      <p className="text-sm text-gray-500">Search destinations</p>
                     </div>
-                    <button 
-                      onClick={handleLogin}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                    >
-                      Sign In with Magic Link
+                    <div className="flex-1 px-6 text-left border-r border-gray-200">
+                      <p className="text-xs font-bold text-gray-900 uppercase">Check in</p>
+                      <p className="text-sm text-gray-500">Add dates</p>
+                    </div>
+                    <div className="flex-1 px-6 text-left">
+                      <p className="text-xs font-bold text-gray-900 uppercase">Who</p>
+                      <p className="text-sm text-gray-500">Add guests</p>
+                    </div>
+                    <button className="bg-blue-600 p-4 rounded-full text-white hover:bg-blue-700 transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
                     </button>
                   </div>
                 </div>
+              </section>
 
-                {/* Signup Card */}
-                <div className="bg-white rounded-lg shadow-md p-8 border-t-4 border-green-600">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Create Account</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                      <input 
-                        type="text"
-                        placeholder="John Doe" 
-                        value={fullName} 
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                      />
+              {/* Auth Section */}
+              <section className="py-20 bg-[#f8f9fa]">
+                <div className="container">
+                  <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="card p-8">
+                      <h3 className="text-2xl font-bold mb-6">Welcome back</h3>
+                      <div className="space-y-4">
+                        <input 
+                          type="email"
+                          placeholder="Email address" 
+                          value={email} 
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="input"
+                        />
+                        <button onClick={handleLogin} className="btn btn-primary w-full py-3 text-base">
+                          Sign in with Google-like Link
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                      <input 
-                        type="email"
-                        placeholder="your@email.com" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                      />
+
+                    <div className="card p-8">
+                      <h3 className="text-2xl font-bold mb-6">New here?</h3>
+                      <div className="space-y-4">
+                        <input 
+                          type="text"
+                          placeholder="Full Name" 
+                          value={fullName} 
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="input"
+                        />
+                        <input 
+                          type="email"
+                          placeholder="Email address" 
+                          value={email} 
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="input"
+                        />
+                        <button onClick={handleCreate} className="btn btn-outline w-full py-3 text-base">
+                          Create an account
+                        </button>
+                      </div>
                     </div>
-                    <button 
-                      onClick={handleCreate}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-200"
-                    >
-                      Create Account & Login
-                    </button>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </>
+          ) : null}
 
-            {/* Apartments Preview */}
-            <section className="bg-gray-50 py-16">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">Popular Listings</h2>
-                <p className="text-center text-gray-600 mb-12">Browse our curated selection of luxury apartments</p>
-
-                {loading ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">Loading apartments...</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {apartments.map((apartment) => (
-                      <Link href={`/apartment?id=${apartment._id || apartment.id}`} key={apartment._id || apartment.id}>
-                        <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 cursor-pointer transform hover:scale-105">
-                          <div className="relative h-64 bg-gray-200">
-                            {apartment.photos && apartment.photos[0] ? (
-                              <img 
-                                src={apartment.photos[0]} 
-                                alt={apartment.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-gray-500">
-                                No image
-                              </div>
-                            )}
-                            <div className="absolute top-4 right-4 bg-white rounded-full px-4 py-2 shadow-md">
-                              <p className="text-lg font-bold text-blue-600">${apartment.pricePerNight || 'N/A'}</p>
-                              <p className="text-xs text-gray-600">/night</p>
-                            </div>
-                          </div>
-                          <div className="p-6">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{apartment.name}</h3>
-                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{apartment.smallDescription || apartment.description.substring(0, 80)}</p>
-                            <div className="flex items-center text-gray-600 mb-4">
-                              <span className="text-sm">📍 {apartment.address?.split(',')[0] || 'Location'}</span>
-                            </div>
-                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200">
-                              View Details
-                            </button>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+          {/* Listings Section */}
+          <section className="py-16">
+            <div className="container">
+              <div className="flex justify-between items-end mb-10">
+                <div>
+                  <h2 className="text-3xl font-bold text-[#202124]">Available Apartments</h2>
+                  <p className="text-[#5f6368] mt-2">Handpicked stays for your comfort</p>
+                </div>
+                <div className="flex gap-2">
+                  {['Entire place', 'Self check-in', 'Free parking', 'Pets allowed'].map(filter => (
+                    <button key={filter} className="btn btn-outline py-1.5 px-4 text-xs font-medium border-gray-300 text-gray-700 hover:bg-gray-100">
+                      {filter}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </section>
-          </>
-        ) : (
-          <>
-            {/* Logged In - Browse Apartments */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">Browse Our Apartments</h2>
 
               {loading ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600">Loading apartments...</p>
+                <div className="flex justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {apartments.map((apartment) => (
                     <Link href={`/apartment?id=${apartment._id || apartment.id}`} key={apartment._id || apartment.id}>
-                      <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 cursor-pointer transform hover:scale-105">
-                        <div className="relative h-72 bg-gray-200">
+                      <div className="group cursor-pointer">
+                        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-gray-200">
                           {apartment.photos && apartment.photos[0] ? (
                             <img 
                               src={apartment.photos[0]} 
                               alt={apartment.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-gray-500">
-                              No image
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              No image available
                             </div>
                           )}
-                          <div className="absolute top-4 right-4 bg-white rounded-full px-4 py-2 shadow-md">
-                            <p className="text-lg font-bold text-blue-600">${apartment.pricePerNight || 'N/A'}</p>
-                            <p className="text-xs text-gray-600">/night</p>
-                          </div>
-                        </div>
-                        <div className="p-6">
-                          <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{apartment.name}</h3>
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{apartment.smallDescription || apartment.description.substring(0, 80)}</p>
-                          <div className="flex items-center text-gray-600 mb-4">
-                            <span className="text-sm">📍 {apartment.address?.split(',')[0] || 'Location'}</span>
-                          </div>
-                          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200">
-                            Book Now
+                          <button className="absolute top-4 right-4 p-2 rounded-full bg-white/70 hover:bg-white text-gray-900 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
                           </button>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <div className="max-w-[80%]">
+                            <h3 className="font-bold text-[#202124] text-lg truncate">{apartment.name}</h3>
+                            <p className="text-[#5f6368] text-sm truncate">{apartment.address}</p>
+                            <p className="text-[#5f6368] text-sm mt-1">{apartment.smallDescription || 'Premium apartment'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-[#202124]">${apartment.pricePerNight}</p>
+                            <p className="text-xs text-[#5f6368]">night</p>
+                          </div>
                         </div>
                       </div>
                     </Link>
                   ))}
                 </div>
               )}
-            </section>
-          </>
-        )}
+            </div>
+          </section>
+        </main>
 
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white py-8 mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-              <div>
-                <h4 className="font-bold mb-4">About dreamflatbytreeforfive</h4>
-                <p className="text-gray-400 text-sm">Your trusted platform for luxury apartment rentals</p>
+        <footer className="bg-white border-t border-gray-200 py-12 mt-20">
+          <div className="container">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 text-sm text-[#5f6368]">
+              <div className="col-span-2">
+                <h4 className="font-bold text-[#202124] mb-4">dreamflat</h4>
+                <p className="max-w-xs">Connecting travelers with high-quality, comfortable living spaces in the world's most beautiful cities.</p>
               </div>
               <div>
-                <h4 className="font-bold mb-4">Quick Links</h4>
-                <ul className="text-gray-400 text-sm space-y-2">
-                  <li><a href="#" className="hover:text-white">Browse Apartments</a></li>
-                  <li><a href="#" className="hover:text-white">About Us</a></li>
-                  <li><a href="#" className="hover:text-white">Contact</a></li>
+                <h4 className="font-bold text-[#202124] mb-4">Support</h4>
+                <ul className="space-y-3">
+                  <li className="hover:underline cursor-pointer">Help Center</li>
+                  <li className="hover:underline cursor-pointer">Safety information</li>
+                  <li className="hover:underline cursor-pointer">Cancellation options</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-bold mb-4">Support</h4>
-                <ul className="text-gray-400 text-sm space-y-2">
-                  <li><a href="#" className="hover:text-white">Help Center</a></li>
-                  <li><a href="#" className="hover:text-white">Booking Guide</a></li>
-                  <li><a href="#" className="hover:text-white">FAQ</a></li>
+                <h4 className="font-bold text-[#202124] mb-4">Hosting</h4>
+                <ul className="space-y-3">
+                  <li className="hover:underline cursor-pointer">List your space</li>
+                  <li className="hover:underline cursor-pointer">Host resources</li>
+                  <li className="hover:underline cursor-pointer">Community forum</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-bold mb-4">Legal</h4>
-                <ul className="text-gray-400 text-sm space-y-2">
-                  <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-                  <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-                </ul>
+              <div className="col-span-2">
+                <h4 className="font-bold text-[#202124] mb-4">Subscribe to our newsletter</h4>
+                <div className="flex gap-2">
+                  <input type="email" placeholder="Email address" className="input py-2" />
+                  <button className="btn btn-primary py-2 px-4">Join</button>
+                </div>
               </div>
             </div>
-            <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
-              <p>&copy; 2026 dreamflatbytreeforfive. All rights reserved.</p>
+            <div className="border-t border-gray-100 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+              <div className="flex gap-6">
+                <span>© 2026 dreamflat by treeforfive</span>
+                <span className="hover:underline cursor-pointer">Privacy</span>
+                <span className="hover:underline cursor-pointer">Terms</span>
+                <span className="hover:underline cursor-pointer">Sitemap</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="hover:text-gray-900 cursor-pointer">English (US)</span>
+                <span className="hover:text-gray-900 cursor-pointer">$ USD</span>
+              </div>
             </div>
           </div>
         </footer>
@@ -336,4 +321,3 @@ export default function Home() {
     </>
   );
 }
-

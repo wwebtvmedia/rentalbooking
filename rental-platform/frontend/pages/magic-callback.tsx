@@ -1,28 +1,41 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import Head from 'next/head';
 
 export default function MagicCallback() {
   const router = useRouter();
+  const { token } = router.query;
 
   useEffect(() => {
-    const doVerify = async () => {
-      const token = router.query.token as string | undefined;
-      if (!token) return;
+    if (!token) return;
+    const verify = async () => {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
         const res = await axios.post(`${base}/auth/magic/verify`, { token });
-        if (res.data.token) {
-          localStorage.setItem('token', res.data.token);
-          localStorage.setItem('guest', JSON.stringify(res.data.user));
-          router.push('/');
-        }
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('guest', JSON.stringify(res.data.user));
+        router.push('/');
       } catch (err: any) {
-        alert(err.response?.data?.error || err.message);
+        alert('Magic link verification failed: ' + (err.response?.data?.error || err.message));
+        router.push('/magic-request');
       }
     };
-    doVerify();
-  }, [router]);
+    verify();
+  }, [token, router]);
 
-  return <div style={{ padding: 20 }}>Verifying sign-in link...</div>;
+  return (
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-6">
+      <Head>
+        <title>Verifying... - dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+      </Head>
+      
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-6"></div>
+        <h2 className="text-2xl font-bold text-[#202124]">Verifying your link</h2>
+        <p className="text-[#5f6368] mt-2">Please wait while we sign you in securely...</p>
+      </div>
+    </div>
+  );
 }

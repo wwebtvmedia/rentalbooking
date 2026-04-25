@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import Head from 'next/head';
+import Link from 'next/link';
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -34,7 +36,6 @@ export default function PaymentPage() {
       const r = await axios.post(`${base}/payments/create-intent`, { bookingId });
       setClientSecret(r.data.clientSecret || null);
 
-      // Try to dynamically import Stripe client libs and initialize
       if (r.data.clientSecret && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
         try {
           const stripeJs = await import('@stripe/stripe-js');
@@ -43,7 +44,7 @@ export default function PaymentPage() {
           setStripePromise(p);
           setStripeReact(reactStripe);
         } catch (e) {
-          console.warn('Stripe client libs not available; falling back to simulate button', e);
+          console.warn('Stripe client libs not available');
         }
       }
     } catch (err: any) {
@@ -68,51 +69,130 @@ export default function PaymentPage() {
     }
   };
 
-  if (!bookingId) return <div>Loading...</div>;
+  if (!bookingId) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Complete deposit for booking</h1>
-      {booking && (
-        <div>
-          <div><strong>Name:</strong> {booking.fullName}</div>
-          <div><strong>Dates:</strong> {new Date(booking.start).toLocaleString()} - {new Date(booking.end).toLocaleString()}</div>
-          <div><strong>Deposit:</strong> ${booking.depositAmount ? (booking.depositAmount / 100).toFixed(2) : '0.00'}</div>
+    <div className="min-h-screen bg-[#f8f9fa]">
+      <Head>
+        <title>Payment - dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+      </Head>
+
+      <header className="site-header">
+        <div className="container site-header-inner">
+          <Link href="/" className="flex items-center">
+            <span className="text-2xl mr-2">🏠</span>
+            <span className="brand-text">dreamflat</span>
+          </Link>
+          <button onClick={() => router.back()} className="btn btn-outline text-xs py-1 px-3">
+            Cancel
+          </button>
         </div>
-      )}
-      <div style={{ marginTop: 12 }}>
-        <button onClick={startPayment} disabled={loading || !booking || !booking.depositAmount} className="button primary">Start payment</button>
-        <button onClick={simulateSuccess} disabled={loading} className="button secondary" style={{ marginLeft: 8 }}>Simulate success (dev)</button>
-      </div>
-      {error && <div style={{ marginTop: 12, color: 'red' }}>{error}</div>}
-      {clientSecret && stripePromise && StripeReact && (
-        <div style={{ marginTop: 12 }}>
-          {/* Render Stripe Elements with PaymentElement */}
-          <StripeReact.Elements stripe={stripePromise} options={{ clientSecret }}>
-            <CheckoutForm bookingId={bookingId as string} />
-          </StripeReact.Elements>
+      </header>
+
+      <main className="container py-12">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold text-[#202124] mb-8 text-center">Complete your booking</h1>
+          
+          <div className="card p-8">
+            <h2 className="text-xl font-bold text-[#202124] mb-6 border-b border-gray-100 pb-4">Booking Summary</h2>
+            
+            {booking && (
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5f6368]">Guest</span>
+                  <span className="font-medium text-[#202124]">{booking.fullName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#5f6368]">Dates</span>
+                  <span className="font-medium text-[#202124]">
+                    {new Date(booking.start).toLocaleDateString()} - {new Date(booking.end).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                  <span className="text-lg font-bold text-[#202124]">Deposit Amount</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${booking.depositAmount ? (booking.depositAmount / 100).toFixed(2) : '0.00'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <button 
+                onClick={startPayment} 
+                disabled={loading || !booking || !booking.depositAmount} 
+                className="btn btn-primary w-full py-4 text-lg"
+              >
+                {loading ? 'Processing...' : 'Secure Checkout'}
+              </button>
+              
+              <button 
+                onClick={simulateSuccess} 
+                disabled={loading} 
+                className="btn btn-outline w-full py-3"
+              >
+                Simulate Payment Success (Dev Only)
+              </button>
+            </div>
+
+            {error && (
+              <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+            {clientSecret && stripePromise && StripeReact && (
+              <div className="mt-8 pt-8 border-t border-gray-100">
+                <StripeReact.Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <CheckoutForm bookingId={bookingId as string} />
+                </StripeReact.Elements>
+              </div>
+            )}
+
+            {clientSecret && !stripePromise && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-100 text-blue-700 rounded-xl text-sm italic">
+                Stripe client libraries not available. Please use the simulation button for development.
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex items-center justify-center gap-6 text-[#5f6368] text-sm">
+            <div className="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Secure Transaction
+            </div>
+            <div className="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              SSL Encrypted
+            </div>
+          </div>
         </div>
-      )}
-      {clientSecret && !stripePromise && (
-        <div style={{ marginTop: 12 }}>
-          <div>Stripe client libraries not available in this environment. Use the "Simulate success" button to complete dev/test flows.</div>
-        </div>
-      )}
+      </main>
     </div>
   );
 }
 
 function CheckoutForm({ bookingId }: { bookingId: string }) {
-  // require react-stripe-js hooks (available when stripe libs loaded)
   let useStripeFn, useElementsFn, PaymentElementComp;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
     const rs = require('@stripe/react-stripe-js');
     useStripeFn = rs.useStripe;
     useElementsFn = rs.useElements;
     PaymentElementComp = rs.PaymentElement;
   } catch (e) {
-    return <div>Stripe components not available in this environment.</div>;
+    return <div className="text-red-500">Stripe components not available.</div>;
   }
 
   const stripe = useStripeFn();
@@ -129,7 +209,6 @@ function CheckoutForm({ bookingId }: { bookingId: string }) {
       if (res.error) {
         setError(res.error.message || 'Payment failed');
       } else {
-        // success or pending capture
         window.location.href = '/calendar';
       }
     } catch (e: any) {
@@ -140,15 +219,16 @@ function CheckoutForm({ bookingId }: { bookingId: string }) {
   };
 
   return (
-    <div>
-      <div style={{ marginTop: 12 }}>
-        {/* @ts-ignore */}
-        <PaymentElementComp />
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <button onClick={handlePay} className="button primary" disabled={loading}>{loading ? 'Processing...' : 'Pay deposit'}</button>
-      </div>
-      {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
+    <div className="space-y-6">
+      <PaymentElementComp className="mb-4" />
+      <button 
+        onClick={handlePay} 
+        className="btn btn-primary w-full py-4 text-lg" 
+        disabled={loading || !stripe}
+      >
+        {loading ? 'Processing Payment...' : 'Pay Deposit Now'}
+      </button>
+      {error && <div className="text-red-500 text-sm font-medium mt-2">{error}</div>}
     </div>
   );
 }
