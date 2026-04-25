@@ -19,7 +19,7 @@ export default function ApartmentPage() {
         const res = await axios.get(`${base}/apartments/${id}`);
         setApartment(res.data);
       } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to load apartment');
+        setError(err.response?.data?.error || 'Failed to load residence');
       } finally {
         setLoading(false);
       }
@@ -27,230 +27,164 @@ export default function ApartmentPage() {
     fetch();
   }, [id]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold tracking-widest uppercase text-xs">Refining your view...</div>;
-  if (error || !apartment) return <div className="min-h-screen flex items-center justify-center text-red-600 font-bold">{error || 'Apartment not found'}</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black tracking-[0.4em] uppercase text-[10px]">Refining View...</div>;
+  if (error || !apartment) return <div className="min-h-screen flex items-center justify-center text-red-600 font-bold">{error || 'Residence not found'}</div>;
 
   return (
-    <>
+    <div className="reveal">
       <Head>
         <title>{apartment.name} | dreamflat</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-white">
-        <header className="site-header">
-          <div className="container flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 overflow-hidden rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
-                <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
-              </div>
-              <span className="brand-text">dreamflat</span>
-            </Link>
-            <button onClick={() => router.back()} className="btn btn-outline border-none text-gray-500 hover:text-black">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Return
-            </button>
-          </div>
-        </header>
+      <header className="site-header">
+        <div className="container flex justify-between items-center w-full">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-12 h-12 overflow-hidden rounded-lg">
+              <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="brand-text">dreamflat</span>
+          </Link>
+          <button onClick={() => router.back()} className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition">
+            ← Return to Collection
+          </button>
+        </div>
+      </header>
 
-        <main className="py-12">
-          <div className="container">
-            <div className="max-w-6xl mx-auto">
-              {/* Header Info */}
-              <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
-                <div>
-                  <div className="flex items-center gap-4 mb-4">
-                    <span className="bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full">Premier Selection</span>
-                    <div className="flex items-center gap-1 text-sm font-bold">
-                      <span>★ 4.98</span>
-                      <span className="text-gray-400 font-medium">· 124 reviews</span>
-                    </div>
+      <main className="py-24">
+        <div className="container">
+          <div className="max-w-7xl mx-auto">
+            {/* Title & Intro */}
+            <div className="mb-16 reveal">
+              <div className="flex items-center gap-4 mb-8">
+                <span className="text-gold font-black text-[10px] uppercase tracking-[0.3em]">Premier Residence</span>
+                <div className="w-1 h-1 rounded-full bg-gray-300" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">★ 5.0 Rating</span>
+              </div>
+              <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tighter mb-6">{apartment.name}</h1>
+              <p className="text-xl text-gray-500 font-medium flex items-center gap-3">
+                <span className="text-black">📍</span> {apartment.address}
+              </p>
+            </div>
+
+            {/* Mosaic Gallery - Ultra Refined */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[400px] lg:h-[750px] mb-24 reveal overflow-hidden rounded-xl shadow-2xl">
+              <div className="lg:col-span-2 relative group cursor-pointer">
+                <img src={apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Main" />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+              </div>
+              <div className="hidden lg:grid grid-cols-1 grid-rows-2 gap-6">
+                <div className="relative group cursor-pointer overflow-hidden">
+                  <img src={apartment.photos?.[1]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+                </div>
+                <div className="relative group cursor-pointer overflow-hidden">
+                  <img src={apartment.photos?.[2]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+                </div>
+              </div>
+              <div className="hidden lg:block relative group cursor-pointer overflow-hidden">
+                <img src={apartment.photos?.[3] || apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Gallery" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-24">
+              <div className="lg:col-span-8">
+                <div className="flex items-center gap-8 pb-12 mb-12 border-b border-gray-100">
+                  <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center text-white font-black text-2xl">DF</div>
+                  <div>
+                    <h2 className="text-2xl font-black mb-1">Residence Managed by dreamflat</h2>
+                    <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Architectural Significance · Professional Concierge</p>
                   </div>
-                  <h1 className="text-4xl md:text-5xl font-extrabold text-[#202124] tracking-tight mb-4">{apartment.name}</h1>
-                  <p className="text-gray-500 font-bold flex items-center gap-2 text-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    {apartment.address}
+                </div>
+
+                <div className="prose prose-xl max-w-none mb-20">
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-gold mb-8">The Experience</h3>
+                  <p className="text-2xl leading-[1.7] text-gray-600 font-medium whitespace-pre-line">
+                    {apartment.description}
                   </p>
                 </div>
-                <div className="flex gap-4">
-                  <button className="btn btn-outline border-gray-100 rounded-2xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    Share
-                  </button>
-                  <button className="btn btn-outline border-gray-100 rounded-2xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    Save
-                  </button>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-12 pt-12 border-t border-gray-100">
+                  {[
+                    { icon: '📶', label: 'Gigabit Connectivity' },
+                    { icon: '🍳', label: 'Gourmet Kitchen' },
+                    { icon: '🧺', label: 'Premium Laundry' },
+                    { icon: '❄️', label: 'Climate Precision' },
+                    { icon: '💻', label: 'Executive Studio' },
+                    { icon: '🍷', label: 'Curated Cellar' }
+                  ].map(item => (
+                    <div key={item.label} className="flex flex-col gap-4">
+                      <span className="text-3xl">{item.icon}</span>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-gray-900">{item.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Photo Gallery - Luxury Mosaic */}
-              <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 mb-16 h-[400px] md:h-[600px] animate-fade-in overflow-hidden rounded-[32px] shadow-2xl">
-                <div className="md:col-span-2 md:row-span-2 relative group overflow-hidden">
-                  <img src={apartment.photos?.[0] || '/placeholder.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={apartment.name} />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                </div>
-                <div className="hidden md:block relative group overflow-hidden">
-                  <img src={apartment.photos?.[1] || '/placeholder.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                </div>
-                <div className="hidden md:block relative group overflow-hidden">
-                  <img src={apartment.photos?.[2] || '/placeholder.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                </div>
-                <div className="hidden md:block relative group overflow-hidden">
-                  <img src={apartment.photos?.[3] || '/placeholder.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                </div>
-                <div className="hidden md:block relative group overflow-hidden">
-                  <img src={apartment.photos?.[4] || apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                  <button className="absolute bottom-6 right-6 btn glass text-white text-xs font-bold border-white/20">Show All Photos</button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-                <div className="lg:col-span-2">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-10 mb-10 border-b border-gray-100 gap-6">
-                    <div>
-                      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Designed by dreamflat</h2>
-                      <p className="text-gray-500 font-bold">2 guests · 1 bedroom · 1 bed · 1 bath</p>
-                    </div>
-                    <div className="w-16 h-16 rounded-full bg-gray-900 flex-shrink-0 flex items-center justify-center text-white text-2xl border-4 border-gray-50">
-                      DF
-                    </div>
-                  </div>
-
-                  <div className="space-y-12 mb-16">
-                    <div className="flex gap-6">
-                      <div className="text-3xl">🔑</div>
+              <div className="lg:col-span-4">
+                <div className="sticky top-32">
+                  <div className="luxury-card !rounded-2xl p-10 bg-white ring-1 ring-gray-100 shadow-2xl">
+                    <div className="flex justify-between items-baseline mb-10">
                       <div>
-                        <h4 className="font-black text-lg mb-1">Seamless Experience</h4>
-                        <p className="text-gray-500 font-medium">Digital check-in and 24/7 concierge at your service.</p>
+                        <span className="text-4xl font-black">${apartment.pricePerNight}</span>
+                        <span className="text-gray-400 font-bold ml-2 uppercase text-[10px] tracking-widest">/ night</span>
                       </div>
                     </div>
-                    <div className="flex gap-6">
-                      <div className="text-3xl">🎨</div>
-                      <div>
-                        <h4 className="font-black text-lg mb-1">Architectural Gem</h4>
-                        <p className="text-gray-500 font-medium">Curated furniture and bespoke art pieces throughout the property.</p>
+
+                    <div className="border border-gray-100 rounded-lg overflow-hidden mb-8">
+                      <div className="grid grid-cols-2 border-b border-gray-100">
+                        <div className="p-5 border-r border-gray-100 hover:bg-gray-50 cursor-pointer">
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Arrival</span>
+                          <span className="font-bold text-sm">Select Date</span>
+                        </div>
+                        <div className="p-5 hover:bg-gray-50 cursor-pointer">
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Departure</span>
+                          <span className="font-bold text-sm">Select Date</span>
+                        </div>
+                      </div>
+                      <div className="p-5 hover:bg-gray-50 cursor-pointer">
+                        <span className="block text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Residents</span>
+                        <span className="font-bold text-sm">1 Guest</span>
                       </div>
                     </div>
-                    <div className="flex gap-6">
-                      <div className="text-3xl">✨</div>
-                      <div>
-                        <h4 className="font-black text-lg mb-1">Spotless Stay</h4>
-                        <p className="text-gray-500 font-medium">Professional hospital-grade cleaning before every arrival.</p>
+
+                    <Link href={`/calendar?apartmentId=${apartment._id || apartment.id}`}>
+                      <button className="btn btn-gold w-full !py-5 text-[11px] font-black tracking-[0.2em]">
+                        Reserve Residence
+                      </button>
+                    </Link>
+
+                    <div className="mt-12 space-y-6 pt-12 border-t border-gray-50">
+                      <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-gray-500">
+                        <span>Stay Duration (5 nights)</span>
+                        <span className="text-black">${apartment.pricePerNight * 5}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-gray-500">
+                        <span>Concierge Services</span>
+                        <span className="text-black">$150</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-black pt-6 border-t border-gray-900 text-black">
+                        <span>Total</span>
+                        <span>${apartment.pricePerNight * 5 + 150}</span>
                       </div>
                     </div>
                   </div>
-
-                  <div className="mb-16">
-                    <h2 className="text-2xl font-black text-gray-900 mb-6">The Residence</h2>
-                    <p className="text-gray-600 leading-[1.8] text-lg font-medium whitespace-pre-line">
-                      {apartment.description || 'Step into a world of refined elegance. This property has been meticulously designed to provide a perfect balance of contemporary luxury and timeless comfort.'}
+                  
+                  <div className="mt-8 p-8 bg-gray-50 rounded-2xl flex items-center gap-6">
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">🛡️</div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 leading-relaxed">
+                      This property is part of our <span className="text-black">Verified Collection</span>, ensuring absolute quality.
                     </p>
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-12">
-                    <h2 className="text-2xl font-black text-gray-900 mb-8">Curated Amenities</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
-                      {[
-                        { icon: '📶', label: 'Ultra-fast 1Gbps WiFi' },
-                        { icon: '🍳', label: 'Chef-grade Kitchen' },
-                        { icon: '🧺', label: 'In-suite Laundry' },
-                        { icon: '❄️', label: 'Climate Control' },
-                        { icon: '💻', label: 'Designer Workspace' },
-                        { icon: '🍷', label: 'Private Wine Cellar' }
-                      ].map(item => (
-                        <div key={item.label} className="flex items-center gap-4 text-gray-700 font-bold">
-                          <span className="text-2xl">{item.icon}</span>
-                          <span className="text-lg tracking-tight">{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="sticky top-32">
-                    <div className="card p-8 shadow-2xl border-gray-50 ring-1 ring-gray-100">
-                      <div className="flex justify-between items-baseline mb-8">
-                        <div>
-                          <span className="text-3xl font-black text-gray-900">${apartment.pricePerNight}</span>
-                          <span className="text-gray-400 font-bold ml-1">/ night</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm font-bold">
-                          <span>★ 4.98</span>
-                        </div>
-                      </div>
-
-                      <div className="border border-gray-200 rounded-2xl overflow-hidden mb-8">
-                        <div className="grid grid-cols-2 border-b border-gray-200">
-                          <div className="p-4 border-r border-gray-200 hover:bg-gray-50 cursor-pointer transition">
-                            <span className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Arrival</span>
-                            <span className="font-bold text-sm">Add Date</span>
-                          </div>
-                          <div className="p-4 hover:bg-gray-50 cursor-pointer transition">
-                            <span className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Departure</span>
-                            <span className="font-bold text-sm">Add Date</span>
-                          </div>
-                        </div>
-                        <div className="p-4 hover:bg-gray-50 cursor-pointer transition">
-                          <span className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Residents</span>
-                          <span className="font-bold text-sm">1 Guest</span>
-                        </div>
-                      </div>
-
-                      <Link href={`/calendar?apartmentId=${apartment._id || apartment.id}`}>
-                        <button className="btn btn-luxury w-full py-5 text-lg font-black tracking-tight">
-                          Reserve Now
-                        </button>
-                      </Link>
-
-                      <p className="text-center text-xs text-gray-400 font-bold mt-6 uppercase tracking-widest">
-                        Membership required for booking
-                      </p>
-
-                      <div className="mt-10 pt-8 border-t border-gray-100 space-y-5">
-                        <div className="flex justify-between text-gray-600 font-bold">
-                          <span className="underline decoration-gray-200 underline-offset-4">${apartment.pricePerNight} x 5 nights</span>
-                          <span>${apartment.pricePerNight * 5}</span>
-                        </div>
-                        <div className="flex justify-between text-gray-600 font-bold">
-                          <span className="underline decoration-gray-200 underline-offset-4">Concierge fee</span>
-                          <span>$150</span>
-                        </div>
-                        <div className="flex justify-between font-black text-xl pt-6 border-t-2 border-gray-900 text-gray-900">
-                          <span>Total</span>
-                          <span>${apartment.pricePerNight * 5 + 150}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-10 p-6 bg-gray-50 rounded-[32px] border border-gray-100 flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-xl">🛡️</div>
-                      <div>
-                        <h4 className="font-black text-sm mb-0.5">Verified Property</h4>
-                        <p className="text-xs text-gray-400 font-bold">Exclusively managed by dreamflat</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </>
+        </div>
+      </main>
+
+      <footer className="bg-white border-t border-gray-100 py-20 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">dreamflat · Excellence in Living</p>
+      </footer>
+    </div>
   );
 }
