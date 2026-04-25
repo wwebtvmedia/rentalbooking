@@ -36,19 +36,18 @@ import jwt from 'jsonwebtoken';
 
 router.post('/magic', async (req, res) => {
   try {
-    const { email, redirectUrl } = req.body;
+    const { email, redirectUrl, fullName } = req.body;
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // ensure user exists (create if missing)
-    let user = await Customer.findOne({ email });
-    if (!user) user = await Customer.create({ fullName: 'Guest', email });
+    // We no longer create the user immediately here.
+    // Instead, we store the fullName (if provided) in the MagicToken record.
 
     const jti = uuidv4();
     const token = jwt.sign({ jti, email, purpose: 'magic' }, process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '15m' });
 
-    // store jti to prevent replay
+    // store jti to prevent replay, and optionally the fullName for new users
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await MagicToken.create({ jti, email, expiresAt });
+    await MagicToken.create({ jti, email, fullName, expiresAt });
 
     const callback = redirectUrl || (process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/magic-callback';
     const link = `${callback}?token=${encodeURIComponent(token)}`;
@@ -84,7 +83,11 @@ router.post('/magic/verify', async (req, res) => {
 
     // find or create user
     let user = await Customer.findOne({ email: payload.email });
-    if (!user) user = await Customer.create({ fullName: 'Guest', email: payload.email });
+    if (!user) {
+      // If user doesn't exist, create them now using the name from the token record
+      const nameToUse = mt.fullName || 'Guest';
+      user = await Customer.create({ fullName: nameToUse, email: payload.email });
+    }
 
     // issue a session token
     const sessionToken = createToken({ id: user._id.toString(), name: user.fullName, email: user.email, roles: [] }, '14d');

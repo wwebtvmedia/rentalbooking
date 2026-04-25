@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const magicTokenSchema = new mongoose.Schema({
   jti: { type: String, required: true, unique: true },
   email: { type: String, required: true },
+  fullName: { type: String },
   used: { type: Boolean, default: false },
   expiresAt: { type: Date, required: true }
 });

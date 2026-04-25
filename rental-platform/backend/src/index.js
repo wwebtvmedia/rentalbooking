@@ -10,23 +10,39 @@ import ucpRoutes from "./routes/ucp.js";
 import { getMcpServer } from "./mcp/server.js";
 import cors from "cors";
 
-let mcpTransport = null;
+const mcpTransports = new Map();
 
 async function handleMcp(req, res) {
   const { SSEServerTransport } = await import("@modelcontextprotocol/sdk/server/sse.js");
-  mcpTransport = new SSEServerTransport("/mcp/messages", res);
+  const transport = new SSEServerTransport("/mcp/messages", res);
   const server = getMcpServer();
-  await server.connect(mcpTransport);
+  await server.connect(transport);
+
+  // Store transport for message handling
+  if (transport.sessionId) {
+    mcpTransports.set(transport.sessionId, transport);
+    res.on('close', () => {
+      mcpTransports.delete(transport.sessionId);
+    });
+  }
 }
 
 async function handleMcpMessages(req, res) {
-  if (!mcpTransport) return res.status(400).json({ error: "No active SSE session" });
-  await mcpTransport.handlePostMessage(req, res);
+  const sessionId = req.query.sessionId;
+  if (!sessionId) return res.status(400).json({ error: "Missing sessionId" });
+  const transport = mcpTransports.get(sessionId);
+  if (!transport) return res.status(400).json({ error: "No active SSE session for this ID" });
+  await transport.handlePostMessage(req, res);
 }
 
 const app = express();
 // Allow the frontend origin. Adjust or restrict as needed for production.
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true }));
+
+// MCP SSE routes
+app.get("/mcp", handleMcp);
+app.post("/mcp/messages", handleMcpMessages);
+
 app.use(express.json());
 
 // serve uploaded files
@@ -54,10 +70,6 @@ app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
-
-// MCP SSE routes
-app.get("/mcp", handleMcp);
-app.post("/mcp/messages", handleMcpMessages);
 
 // Global error handler
 app.use((err, req, res, next) => {

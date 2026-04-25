@@ -56,11 +56,23 @@ export default function Home() {
     if (!fullName || !email) return alert('Name and email required');
     try {
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      const res = await axios.post(`${base}/customers`, { fullName, email });
-      const login = await axios.post(`${base}/auth/login`, { email: res.data.email, name: res.data.fullName });
-      saveGuest(res.data);
-      localStorage.setItem('token', login.data.token);
-      alert('Welcome! Account created and logged in');
+      // Instead of creating the customer directly, we send a magic link with the name.
+      // The account will be created when they click the link (verify).
+      const res = await axios.post(`${base}/auth/magic`, { 
+        email, 
+        fullName, 
+        redirectUrl: window.location.origin + '/magic-callback' 
+      });
+      
+      if (res.data?.token) {
+        // Dev/Test mode: auto-verify if token is returned
+        const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
+        saveGuest(verify.data.user);
+        localStorage.setItem('token', verify.data.token);
+        alert('Welcome! Account created and logged in');
+      } else {
+        alert('Verification email sent! Please click the link in your email to create your account.');
+      }
     } catch (err: any) {
       alert(err.response?.data?.error || err.message);
     }
