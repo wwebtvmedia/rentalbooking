@@ -126,21 +126,21 @@ export default function Home() {
             <Link href="#" className="hover:text-black transition">Owners</Link>
           </nav>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-8 ml-auto">
             {guest ? (
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Member: {guest.fullName.split(' ')[0]}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden sm:inline">Member: {guest.fullName.split(' ')[0]}</span>
                 <button onClick={logout} className="text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition">Exit</button>
               </div>
             ) : (
               <button 
                 onClick={() => document.getElementById('auth')?.scrollIntoView({behavior: 'smooth'})}
-                className="btn btn-outline border-none text-[10px] font-black uppercase tracking-widest"
+                className="btn btn-outline border-none text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
               >
                 Sign In
               </button>
             )}
-            <button className="btn btn-primary !py-3 !px-6 text-[10px]">Book Now</button>
+            <button className="btn btn-primary !py-3 !px-8 text-[10px] whitespace-nowrap">Book Now</button>
           </div>
         </div>
       </header>
@@ -169,9 +169,9 @@ export default function Home() {
               <p className="text-xl text-gray-300 max-w-xl leading-relaxed mb-12 fade-in-up" style={{ animationDelay: '0.6s' }}>
                 Discover an elite collection of architecturally significant residences, curated for those who demand the extraordinary.
               </p>
-              <div className="flex gap-4 fade-in-up" style={{ animationDelay: '0.8s' }}>
-                <button className="btn btn-gold px-12">View Collection</button>
-                <button className="btn glass-panel text-white border-white/20 px-12">Our Story</button>
+              <div className="flex flex-col sm:flex-row gap-6 fade-in-up" style={{ animationDelay: '0.8s' }}>
+                <button className="btn btn-gold px-12 whitespace-nowrap">View Collection</button>
+                <button className="btn glass-panel text-white border-white/20 px-12 whitespace-nowrap">Our Story</button>
               </div>
             </div>
           </div>
