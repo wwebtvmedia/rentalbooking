@@ -21,14 +21,18 @@ export default function MagicRequest() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-6">
       <Head>
-        <title>Sign in - dreamflat</title>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+        <title>Sign in | dreamflat</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <Link href="/" className="text-4xl mb-4 block">🏠</Link>
-          <h1 className="text-3xl font-bold text-[#202124]">Sign in to dreamflat</h1>
+          <Link href="/" className="inline-block mb-6">
+            <div className="w-16 h-16 overflow-hidden rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
+            </div>
+          </Link>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sign in to dreamflat</h1>
           <p className="text-[#5f6368] mt-2">Use your email to get a secure sign-in link</p>
         </div>
 

@@ -117,8 +117,8 @@ export default function Home() {
         <header className="site-header">
           <div className="container flex justify-between items-center">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white group-hover:rotate-12 transition-transform duration-300">
-                <span className="text-xl">🏠</span>
+              <div className="w-10 h-10 overflow-hidden rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+                <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
               </div>
               <span className="brand-text">dreamflat</span>
             </Link>
@@ -337,7 +337,9 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-12">
               <div className="max-w-xs">
                 <Link href="/" className="flex items-center gap-2 mb-6">
-                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white text-sm">🏠</div>
+                  <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center">
+                    <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
+                  </div>
                   <span className="brand-text text-xl">dreamflat</span>
                 </Link>
                 <p className="text-gray-500 font-medium leading-relaxed">

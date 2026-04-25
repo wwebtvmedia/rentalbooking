@@ -10,6 +10,7 @@ COPY tsconfig.json ./
 COPY pages ./pages
 COPY components ./components
 COPY styles ./styles
+COPY public ./public
 COPY types ./types
 COPY .env .env
 

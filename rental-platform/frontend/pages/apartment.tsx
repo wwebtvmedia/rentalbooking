@@ -42,8 +42,8 @@ export default function ApartmentPage() {
         <header className="site-header">
           <div className="container flex justify-between items-center">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white group-hover:rotate-12 transition-transform duration-300">
-                <span className="text-xl">🏠</span>
+              <div className="w-10 h-10 overflow-hidden rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+                <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
               </div>
               <span className="brand-text">dreamflat</span>
             </Link>
