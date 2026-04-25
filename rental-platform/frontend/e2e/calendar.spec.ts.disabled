@@ -17,18 +17,23 @@ test('can open booking modal and submit booking', async ({ page }) => {
   });
 
   await page.goto('/calendar');
-  await expect(page.locator('text=Calendar')).toBeVisible({ timeout: 10000 });
+  await page.waitForTimeout(1000);
+  
+  await expect(page.getByRole('heading', { name: 'Reserve your stay' })).toBeVisible({ timeout: 15000 });
 
-  // open modal using the New booking button (wait for the button to appear)
-  await expect(page.locator('text=New booking')).toBeVisible({ timeout: 10000 });
-  await page.click('text=New booking');
-  await page.fill('label:has-text("Name") input', 'Test Guest');
-  await page.fill('label:has-text("Email") input', 'test@example.com');
-  await page.click('button:has-text("Create booking")');
+  // open modal using the Custom Request button
+  const customRequestBtn = page.getByRole('button', { name: 'Custom Request' });
+  await expect(customRequestBtn).toBeVisible({ timeout: 10000 });
+  await customRequestBtn.click();
+  
+  await page.getByPlaceholder('Full legal name').fill('Test Guest');
+  await page.getByPlaceholder('your@prestige.com').fill('test@example.com');
+  
+  const confirmBtn = page.getByRole('button', { name: 'Confirm Privilege' });
+  await confirmBtn.click();
 
   // expect booking request to have been sent
-  await page.waitForTimeout(200);
-  expect(bookingRequest).not.toBeNull();
+  await expect.poll(() => bookingRequest, { timeout: 5000 }).not.toBeNull();
   expect(bookingRequest.method).toBe('POST');
   expect(bookingRequest.postData).toContain('Test Guest');
 });

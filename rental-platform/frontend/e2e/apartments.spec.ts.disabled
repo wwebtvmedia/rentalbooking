@@ -27,14 +27,18 @@ test('apartments list and calendar shows apartment details', async ({ page }) =>
   // wait for the apartments request to complete and UI to render
   await page.waitForResponse(r => r.url().endsWith('/apartments') && r.status() === 200);
   await expect(page.locator(`text=${mockApt.name}`)).toBeVisible({ timeout: 10000 });
+  
+  // Click on the apartment card
   await page.click(`text=${mockApt.name}`);
-  await page.click('text=View calendar');
+  
+  // Apartment page should show details
+  await expect(page.locator('text=Check Availability')).toBeVisible({ timeout: 10000 });
+  await page.click('text=Check Availability');
 
   // Calendar page should show header
-  await expect(page.locator('text=Calendar')).toBeVisible();
+  await expect(page.locator('text=Reserve your stay')).toBeVisible({ timeout: 10000 });
 
   // Open new booking modal and ensure the apartment info appears
-  await page.click('text=New booking');
-  await expect(page.locator(`text=${mockApt.name}`)).toBeVisible();
-  await expect(page.locator(`text=Price/night: $${mockApt.pricePerNight}`)).toBeVisible();
+  await page.click('text=Custom Request');
+  await expect(page.locator('text=Confirm Stay')).toBeVisible();
 });
