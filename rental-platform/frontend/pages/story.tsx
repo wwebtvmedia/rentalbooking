@@ -3,11 +3,11 @@ import Layout from '../components/Layout';
 
 export default function StoryPage() {
   return (
-    <Layout title="Our Story | dreamflat">
+    <Layout title="Our Story | bestflats.vip">
       <section className="py-40">
         <div className="container max-w-4xl text-center">
           <span className="text-gold font-black text-xs uppercase tracking-[0.4em] mb-6 inline-block">Established 2026</span>
-          <h1 className="text-6xl font-black mb-12">The dreamflat Story.</h1>
+          <h1 className="text-6xl font-black mb-12">The bestflats.vip Story.</h1>
           <p className="text-xl text-gray-500 leading-relaxed mb-12">
             What began as a simple idea—that finding an exceptional residence should be as inspiring as the stay itself—has evolved into a global platform for refinement. 
           </p>

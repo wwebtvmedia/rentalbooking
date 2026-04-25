@@ -69,7 +69,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <Head>
-        <title>Admin Dashboard | dreamflat</title>
+        <title>Admin Dashboard | bestflats.vip</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
@@ -78,9 +78,9 @@ export default function AdminPage() {
         <div className="container site-header-inner">
           <Link href="/" className="flex items-center">
             <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center mr-2">
-              <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
+              <img src="/tree4fivelogo.png" alt="bestflats.vip logo" className="w-full h-full object-cover" />
             </div>
-            <span className="brand-text">dreamflat Admin</span>
+            <span className="brand-text">bestflats.vip Admin</span>
           </Link>
 
           <Link href="/" className="btn btn-outline text-xs py-1 px-3">

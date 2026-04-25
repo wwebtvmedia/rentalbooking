@@ -3,12 +3,12 @@
 
 set -e
 
-echo "🏗️  Starting dreamflat Production Deployment for Pi..."
+echo "🏗️  Starting bestflats.vip Production Deployment for Pi..."
 
 # 1. Environment Configuration
 # We use the specific subdomains you requested
-FRONTEND_DOMAIN="https://dreamflat.tree4five.com"
-BACKEND_DOMAIN="https://api-dreamflat.tree4five.com"
+FRONTEND_DOMAIN="https://bestflats.vip"
+BACKEND_DOMAIN="https://api-bestflats.vip"
 
 echo "📍 Configuration:"
 echo "   - Frontend: $FRONTEND_DOMAIN"

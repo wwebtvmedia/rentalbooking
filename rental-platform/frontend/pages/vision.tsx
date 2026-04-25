@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function VisionPage() {
   return (
-    <Layout title="Our Vision | dreamflat">
+    <Layout title="Our Vision | bestflats.vip">
       <section className="py-40">
         <div className="container max-w-4xl text-center">
           <h1 className="text-5xl font-black mb-12">The Future <br/> of Living.</h1>

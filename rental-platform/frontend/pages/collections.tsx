@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function CollectionsPage() {
   return (
-    <Layout title="Our Collection | dreamflat">
+    <Layout title="Our Collection | bestflats.vip">
       <section className="py-40">
         <div className="container">
           <div className="max-w-4xl">

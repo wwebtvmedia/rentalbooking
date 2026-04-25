@@ -90,7 +90,7 @@ const CalendarPage = () => {
   return (
     <div className="fade-in-up">
       <Head>
-        <title>Availability | dreamflat</title>
+        <title>Availability | bestflats.vip</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </Head>
       
@@ -101,7 +101,7 @@ const CalendarPage = () => {
               <div className="w-12 h-12 overflow-hidden rounded-lg">
                 <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
               </div>
-              <span className="brand-text">dreamflat</span>
+              <span className="brand-text">bestflats.vip</span>
             </Link>
             <button onClick={() => router.back()} className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition">
               ← Return

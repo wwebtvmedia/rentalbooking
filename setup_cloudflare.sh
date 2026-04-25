@@ -31,7 +31,7 @@ echo "A browser window should open. If not, copy the link provided below."
 cloudflared tunnel login
 
 # 3. Create Tunnel
-TUNNEL_NAME="dreamflat-pi"
+TUNNEL_NAME="bestflats.vip-pi"
 echo "🏗️  Creating tunnel: $TUNNEL_NAME..."
 # Delete existing tunnel with same name if it exists to avoid conflicts
 cloudflared tunnel delete -f "$TUNNEL_NAME" 2>/dev/null || true
@@ -49,17 +49,17 @@ tunnel: $TUNNEL_ID
 credentials-file: /home/$USER/.cloudflared/$TUNNEL_ID.json
 
 ingress:
-  - hostname: dreamflat.tree4five.com
+  - hostname: bestflats.vip
     service: http://localhost:3000
-  - hostname: api-dreamflat.tree4five.com
+  - hostname: api-bestflats.vip
     service: http://localhost:4000
   - service: http_status:404
 EOF
 
 # 5. Route DNS
 echo "🌐 Routing subdomains to tunnel..."
-cloudflared tunnel route dns "$TUNNEL_NAME" dreamflat.tree4five.com
-cloudflared tunnel route dns "$TUNNEL_NAME" api-dreamflat.tree4five.com
+cloudflared tunnel route dns "$TUNNEL_NAME" bestflats.vip
+cloudflared tunnel route dns "$TUNNEL_NAME" api-bestflats.vip
 
 # 6. Install as Service
 echo "🚀 Installing as systemd service..."
@@ -75,6 +75,6 @@ Check status with:
 sudo systemctl status cloudflared
 
 Your site should soon be live at:
-🔗 https://dreamflat.tree4five.com
-🔗 https://api-dreamflat.tree4five.com
+🔗 https://bestflats.vip
+🔗 https://api-bestflats.vip
 "

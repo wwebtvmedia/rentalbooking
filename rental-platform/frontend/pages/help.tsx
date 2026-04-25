@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function HelpPage() {
   return (
-    <Layout title="Help Centre | dreamflat">
+    <Layout title="Help Centre | bestflats.vip">
       <section className="py-40">
         <div className="container max-w-4xl">
           <h1 className="text-4xl font-black mb-12">How can we help?</h1>

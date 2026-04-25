@@ -21,7 +21,7 @@ export default function MagicRequest() {
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-6">
       <Head>
-        <title>Sign in | dreamflat</title>
+        <title>Sign in | bestflats.vip</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
@@ -29,10 +29,10 @@ export default function MagicRequest() {
         <div className="text-center mb-10">
           <Link href="/" className="inline-block mb-6">
             <div className="w-16 h-16 overflow-hidden rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-              <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
+              <img src="/tree4fivelogo.png" alt="bestflats.vip logo" className="w-full h-full object-cover" />
             </div>
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sign in to dreamflat</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sign in to bestflats.vip</h1>
           <p className="text-[#5f6368] mt-2">Use your email to get a secure sign-in link</p>
         </div>
 

@@ -4,7 +4,7 @@ const PAGES = [
   { path: '/collections', title: 'Our Collection', heading: 'The Collection.' },
   { path: '/concierge', title: 'Concierge Services', heading: 'At your service.' },
   { path: '/owners', title: 'For Property Owners', heading: 'List your property.' },
-  { path: '/story', title: 'Our Story', heading: 'The dreamflat Story.' },
+  { path: '/story', title: 'Our Story', heading: 'The bestflats.vip Story.' },
   { path: '/privacy', title: 'Privacy Policy', heading: 'Privacy Policy.' },
   { path: '/terms', title: 'Terms of Service', heading: 'Terms of Service.' },
   { path: '/help', title: 'Help Centre', heading: 'How can we help?' },

@@ -8,7 +8,7 @@ interface LayoutProps {
   title?: string;
 }
 
-export default function Layout({ children, title = 'dreamflat | Excellence in Living' }: LayoutProps) {
+export default function Layout({ children, title = 'bestflats.vip | Excellence in Living' }: LayoutProps) {
   const [guest, setGuest] = useState<any>(null);
   const router = useRouter();
 
@@ -40,7 +40,7 @@ export default function Layout({ children, title = 'dreamflat | Excellence in Li
               <div className="w-10 h-10 lg:w-12 lg:h-12 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-500">
                 <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
               </div>
-              <span className="brand-text lg:text-2xl">dreamflat</span>
+              <span className="brand-text lg:text-2xl">bestflats.vip</span>
             </Link>
           </div>
 
@@ -78,7 +78,7 @@ export default function Layout({ children, title = 'dreamflat | Excellence in Li
                 <div className="w-10 h-10 overflow-hidden rounded-lg">
                   <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
                 </div>
-                <span className="brand-text text-xl">dreamflat</span>
+                <span className="brand-text text-xl">bestflats.vip</span>
               </Link>
               <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
                 We are dedicated to the art of fine living. Our mission is to connect discerning travelers with the world's most exceptional private residences.
@@ -105,7 +105,7 @@ export default function Layout({ children, title = 'dreamflat | Excellence in Li
           </div>
           
           <div className="mt-32 pt-12 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">
-            <p>© 2026 dreamflat by treeforfive. All Rights Reserved.</p>
+            <p>© 2026 bestflats.vip by treeforfive. All Rights Reserved.</p>
             <div className="flex gap-12">
               <Link href="/privacy" className="hover:text-black transition">Privacy</Link>
               <Link href="/terms" className="hover:text-black transition">Terms</Link>

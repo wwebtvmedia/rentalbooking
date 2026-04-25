@@ -48,7 +48,7 @@ export default function BookingModal({ open, start, end, apartment, onClose, onS
           <div className="md:col-span-2 bg-black p-10 text-white flex flex-col justify-between">
             <div>
               <div className="w-10 h-10 overflow-hidden rounded-xl flex items-center justify-center mb-10">
-                <img src="/tree4fivelogo.png" alt="dreamflat logo" className="w-full h-full object-cover" />
+                <img src="/tree4fivelogo.png" alt="bestflats.vip logo" className="w-full h-full object-cover" />
               </div>
               <h2 className="text-3xl font-extrabold tracking-tight mb-4">Confirm Stay</h2>
               <p className="text-gray-400 font-medium text-sm leading-relaxed mb-10">
@@ -68,7 +68,7 @@ export default function BookingModal({ open, start, end, apartment, onClose, onS
             </div>
             
             <div className="pt-10 border-t border-white/10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              Secured by dreamflat
+              Secured by bestflats.vip
             </div>
           </div>
 
