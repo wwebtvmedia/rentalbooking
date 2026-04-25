@@ -96,7 +96,7 @@ export default function Home() {
   };
 
   return (
-    <div className="reveal">
+    <div className="fade-in-up">
       <Head>
         <title>dreamflat | Excellence in Living</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -145,7 +145,7 @@ export default function Home() {
             <img 
               src={apartments[0]?.photos?.[0] || FALLBACK_APARTMENTS[0].photos[0]} 
               className="w-full h-full object-cover opacity-60 scale-110" 
-              style={{ animation: 'reveal 20s infinite alternate' }}
+              style={{ animation: 'heroScale 20s infinite alternate' }}
               alt="Hero"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -153,16 +153,16 @@ export default function Home() {
           
           <div className="container relative z-10">
             <div className="max-w-4xl">
-              <span className="inline-block mb-6 text-gold font-black text-xs uppercase tracking-[0.4em] reveal" style={{ animationDelay: '0.2s' }}>
+              <span className="inline-block mb-6 text-gold font-black text-xs uppercase tracking-[0.4em] fade-in-up" style={{ animationDelay: '0.2s' }}>
                 Refined Hospitality
               </span>
-              <h1 className="heading-hero text-white mb-10 reveal" style={{ animationDelay: '0.4s' }}>
+              <h1 className="heading-hero text-white mb-10 fade-in-up" style={{ animationDelay: '0.4s' }}>
                 Your private <br/> sanctuary <span className="text-gold">awaits.</span>
               </h1>
-              <p className="text-xl text-gray-300 max-w-xl leading-relaxed mb-12 reveal" style={{ animationDelay: '0.6s' }}>
+              <p className="text-xl text-gray-300 max-w-xl leading-relaxed mb-12 fade-in-up" style={{ animationDelay: '0.6s' }}>
                 Discover an elite collection of architecturally significant residences, curated for those who demand the extraordinary.
               </p>
-              <div className="flex gap-4 reveal" style={{ animationDelay: '0.8s' }}>
+              <div className="flex gap-4 fade-in-up" style={{ animationDelay: '0.8s' }}>
                 <button className="btn btn-gold px-12">View Collection</button>
                 <button className="btn glass-panel text-white border-white/20 px-12">Our Story</button>
               </div>
@@ -334,7 +334,7 @@ export default function Home() {
       </footer>
 
       <style jsx global>{`
-        @keyframes reveal {
+        @keyframes heroScale {
           from { transform: scale(1.1); }
           to { transform: scale(1); }
         }

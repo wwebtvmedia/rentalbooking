@@ -181,13 +181,13 @@ body {
 .text-gold { color: var(--text-gold); }
 
 /* Animation */
-.reveal {
+.fade-in-up {
   opacity: 0;
   transform: translateY(30px);
-  animation: reveal 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
 }
 
-@keyframes reveal {
+@keyframes fadeInUp {
   to {
     opacity: 1;
     transform: translateY(0);

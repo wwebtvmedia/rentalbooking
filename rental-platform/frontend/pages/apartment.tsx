@@ -31,7 +31,7 @@ export default function ApartmentPage() {
   if (error || !apartment) return <div className="min-h-screen flex items-center justify-center text-red-600 font-bold">{error || 'Residence not found'}</div>;
 
   return (
-    <div className="reveal">
+    <div className="fade-in-up">
       <Head>
         <title>{apartment.name} | dreamflat</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -55,7 +55,7 @@ export default function ApartmentPage() {
         <div className="container">
           <div className="max-w-7xl mx-auto">
             {/* Title & Intro */}
-            <div className="mb-16 reveal">
+            <div className="mb-16 fade-in-up">
               <div className="flex items-center gap-4 mb-8">
                 <span className="text-gold font-black text-[10px] uppercase tracking-[0.3em]">Premier Residence</span>
                 <div className="w-1 h-1 rounded-full bg-gray-300" />
@@ -68,7 +68,7 @@ export default function ApartmentPage() {
             </div>
 
             {/* Mosaic Gallery - Ultra Refined */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[400px] lg:h-[750px] mb-24 reveal overflow-hidden rounded-xl shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[400px] lg:h-[750px] mb-24 fade-in-up overflow-hidden rounded-xl shadow-2xl">
               <div className="lg:col-span-2 relative group cursor-pointer">
                 <img src={apartment.photos?.[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Main" />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
