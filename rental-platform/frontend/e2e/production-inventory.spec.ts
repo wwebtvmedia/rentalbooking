@@ -8,8 +8,8 @@ test.describe('Production Inventory Verification', () => {
     // We expect 3 distinct property titles to eventually load
     const properties = [
       'Comfortable and Convenient Stay in the Heart of Suresnes',
-      'The Crown Penthouse at Hudson Yards',
-      'Villa Aetheria'
+      'Nabel Bungalow by the Sea',
+      'Azure Antibes Flat'
     ];
 
     for (const title of properties) {
@@ -21,10 +21,10 @@ test.describe('Production Inventory Verification', () => {
   test('each property should have its specific pricing visible', async ({ page }) => {
     await page.goto('https://www.bestflats.vip');
     
-    // Check Santorini Price
-    await expect(page.locator('text=$890')).toBeVisible();
-    // Check NY Price
-    await expect(page.locator('text=$1250')).toBeVisible();
+    // Check Antibes Price
+    await expect(page.locator('text=$350')).toBeVisible();
+    // Check Nabel Price
+    await expect(page.locator('text=$420')).toBeVisible();
   });
 
 });

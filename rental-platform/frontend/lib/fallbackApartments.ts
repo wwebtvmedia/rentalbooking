@@ -21,44 +21,44 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
     depositAmount: 50000,
   },
   {
-    id: 'hudson-yards-penthouse',
-    _id: 'hudson-yards-penthouse',
-    name: 'The Crown Penthouse at Hudson Yards',
-    lat: 40.7533,
-    lon: -74.0016,
-    address: 'Hudson Yards, New York, NY 10001, USA',
-    description: `Experience the pinnacle of New York luxury in this spectacular penthouse. Featuring floor-to-ceiling windows, a private wraparound terrace, and curated contemporary art.
-The residence offers a state-of-the-art chef's kitchen, smart home integration, and a master suite that defies expectations.
-Located in the heart of Hudson Yards, you are steps away from world-class dining, high-end shopping, and the High Line.`,
-    smallDescription: 'Unrivaled panoramic views of Manhattan',
-    pricePerNight: 1250,
+    id: 'nabel-bungalow',
+    _id: 'nabel-bungalow',
+    name: 'Nabel Bungalow by the Sea',
+    lat: 43.3082,
+    lon: 6.6372,
+    address: 'Plage de Nabel, 83120 Sainte-Maxime, France',
+    description: `Experience the ultimate coastal retreat in the Nabel Bungalow. This eco-conscious residence features open-air living spaces, a private beach path, and artisanal decor.
+Wake up to the sound of the waves and enjoy breakfast on your sun-drenched deck. The bungalow offers total privacy and a minimalist design that connects you with nature.
+Perfect for couples or solo travelers seeking a peaceful escape with modern amenities.`,
+    smallDescription: 'Bohemian luxury just steps from the sand',
+    pricePerNight: 420,
     photos: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600607687940-4e2a09695d51?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
     ],
-    rules: 'No events or commercial photography without prior approval.',
-    depositAmount: 250000,
+    rules: 'No loud music after sunset. Respect the beach environment.',
+    depositAmount: 80000,
   },
   {
-    id: 'santorini-villa',
-    _id: 'santorini-villa',
-    name: 'Villa Aetheria',
-    lat: 36.4618,
-    lon: 25.3753,
-    address: 'Oia, Santorini 847 02, Greece',
-    description: `A masterclass in Cycladic architecture, Villa Aetheria offers a secluded sanctuary perched on the cliffs of Oia. 
-Immerse yourself in the heated infinity pool that merges seamlessly with the Aegean Sea. The villa features minimalist luxury interiors, a private wine cellar, and a dedicated butler.
-Enjoy the legendary Santorini sunsets from your private terrace in absolute privacy.`,
-    smallDescription: 'Secluded cliffside villa with infinity pool',
-    pricePerNight: 890,
+    id: 'antibes-flat',
+    _id: 'antibes-flat',
+    name: 'Azure Antibes Flat',
+    lat: 43.5804,
+    lon: 7.1251,
+    address: 'Old Town, 06600 Antibes, France',
+    description: `A sophisticated residence located in the historic center of Antibes. This flat combines classic French architecture with contemporary luxury.
+Featuring views of the Mediterranean and the Port Vauban, the apartment offers a spacious living room, a marble bathroom, and high-speed fiber internet.
+Enjoy the best of the Côte d'Azur, with the Picasso Museum and pristine beaches just a short walk away.`,
+    smallDescription: 'Classic elegance in the heart of the French Riviera',
+    pricePerNight: 350,
     photos: [
-      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1613490900233-04144177d617?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1600607687940-4e2a09695d51?auto=format&fit=crop&w=1200&q=80'
     ],
-    rules: 'Adults only. No pets allowed.',
-    depositAmount: 100000,
+    rules: 'Small pets allowed. No parties.',
+    depositAmount: 50000,
   }
 ];
 
