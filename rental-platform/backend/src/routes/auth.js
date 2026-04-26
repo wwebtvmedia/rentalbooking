@@ -17,24 +17,13 @@ router.get('/me', (req, res) => {
 // POST /auth/magic - request a magic sign-in link
 router.post('/magic', async (req, res) => {
   try {
-    let { email, redirectUrl, fullName } = req.body;
+    let { email, redirectUrl, fullName, role } = req.body;
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // Handle Profile Suffixes (e.g. user_host@example.com)
-    let requestedRole = 'guest';
-    if (email.includes('_host')) {
-        requestedRole = 'host';
-        email = email.replace('_host', '');
-    } else if (email.includes('_concierge')) {
-        requestedRole = 'concierge';
-        email = email.replace('_concierge', '');
-    } else if (email.includes('_contractor')) {
-        requestedRole = 'contractor';
-        email = email.replace('_contractor', '');
-    }
+    // Role is now explicitly passed from the frontend based on the subdomain
+    const requestedRole = role || 'guest';
 
     const jti = uuidv4();
-    // We store the requested role in the token purpose or a new field
     const token = jwt.sign({ jti, email, requestedRole, purpose: 'magic' }, process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '15m' });
 
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);

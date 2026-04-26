@@ -27,9 +27,20 @@ export default function Home() {
   const [fullName, setFullName] = useState('');
   const [apartments, setApartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestedRole, setRequestedRole] = useState('guest');
 
   const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    // Subdomain Detection Logic
+    if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        if (host.startsWith('host.')) setRequestedRole('host');
+        else if (host.startsWith('conci.')) setRequestedRole('concierge');
+        else if (host.startsWith('subcont.')) setRequestedRole('contractor');
+    }
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -59,8 +70,13 @@ export default function Home() {
   const handleCreate = async () => {
     if (!fullName || !email) return alert('Name and email required');
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      const res = await axios.post(`${base}/auth/magic`, { email, fullName, redirectUrl: window.location.origin + '/magic-callback' });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const res = await axios.post(`${base}/auth/magic`, { 
+        email, 
+        fullName, 
+        role: requestedRole,
+        redirectUrl: window.location.origin + '/magic-callback' 
+      });
       if (res.data?.token) {
         const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
         saveGuest(verify.data.user);
@@ -77,8 +93,12 @@ export default function Home() {
   const handleLogin = async () => {
     if (!email) return alert('Email required');
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      const res = await axios.post(`${base}/auth/magic`, { email, redirectUrl: window.location.origin + '/magic-callback' });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const res = await axios.post(`${base}/auth/magic`, { 
+        email, 
+        role: requestedRole,
+        redirectUrl: window.location.origin + '/magic-callback' 
+      });
       if (res.data?.token) {
         const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
         saveGuest(verify.data.user);
@@ -101,7 +121,7 @@ export default function Home() {
   const getImgUrl = (path: string) => {
     if (!path) return '/placeholder.png';
     if (path.startsWith('http')) return path;
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
     return `${base}${path}`;
   };
 
@@ -270,7 +290,9 @@ export default function Home() {
                 <div className="lg:w-1/2 p-16 lg:p-24 flex flex-col justify-center">
                   <div className="space-y-12">
                     <div>
-                      <h4 className="text-2xl font-black mb-2">Request Access</h4>
+                      <h4 className="text-2xl font-black mb-2 uppercase tracking-tight">
+                        {requestedRole === 'guest' ? 'Request Access' : `${requestedRole} portal`}
+                      </h4>
                       <p className="text-gray-500 font-medium">Please provide your details below.</p>
                     </div>
                     
