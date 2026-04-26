@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: docker.io/library/mongo:4.4
+    image: docker.io/library/mongo:4.4.18
     container_name: mongo
     restart: always
     volumes:
