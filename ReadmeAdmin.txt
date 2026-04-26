@@ -2,70 +2,64 @@
              bestflats.vip - Platform Administrator Guide
 ========================================================================
 
-This document contains instructions for accessing and securing the 
-Enterprise Intelligence Dashboard and managing the platform.
+This document contains instructions for accessing, securing, and 
+managing the bestflats.vip enterprise platform.
 
-1. ACCESSING THE DASHBOARD
+1. ACCESSING THE DASHBOARDS
 ------------------------------------------------------------------------
-The Platform Dashboard provides real-time analytics on revenue, customer 
-growth, and property performance.
+- Platform Intelligence: https://www.bestflats.vip/admin/dashboard
+- Host Portal:          https://host.bestflats.vip
+- Concierge Hub:        https://conci.bestflats.vip
+- Contractor Services:  https://subcont.bestflats.vip
 
-URL: https://www.bestflats.vip/admin/dashboard
-
-NOTE: This page is secured by Mutual TLS (mTLS). You cannot access it 
-without a valid client certificate installed in your browser.
+NOTE: The Platform Intelligence dashboard is secured by Mutual TLS (mTLS).
 
 
-2. CERTIFICATE MANAGEMENT (mTLS)
+2. CLOUDFLARE MANAGEMENT
 ------------------------------------------------------------------------
-To gain access, you must generate and install a private certificate.
+A. Tunnel Configuration (Zero Trust Dashboard):
+   1. Go to Networks -> Tunnels.
+   2. Ensure the following Public Hostnames are routed to the Pi:
+      - bestflats.vip       -> http://localhost:3000
+      - host.bestflats.vip  -> http://localhost:3000
+      - conci.bestflats.vip -> http://localhost:3000
+      - api.bestflats.vip   -> http://localhost:4000
 
-A. Generate Certificates:
-   Run the following command on your machine:
-   $ python3 generate_admin_certs.py
+B. Mutual TLS (mTLS) for Admin:
+   1. Generate keys: $ python3 generate_admin_certs.py
+   2. Upload 'certs/ca.crt' to SSL/TLS -> Client Certificates.
+   3. Create an Access Application for /admin/dashboard.
+   4. Policy: Allow users with a valid certificate from the uploaded CA.
 
-B. Installation:
-   1. Locate 'certs/admin_bundle.p12'.
-   2. Double-click to install it in your OS Keychain or Browser.
-   3. Certificate Password: bestflats-secure
-   4. Restart your browser.
-
-C. Cloudflare Configuration:
-   1. Upload 'certs/ca.crt' to Cloudflare Zero Trust -> SSL/TLS -> 
-      Mutual TLS.
-   2. Create an Access Policy for /admin/dashboard requiring this CA.
+C. DNS Management:
+   - Always ensure "Proxy" is enabled (Orange Cloud) for all records to 
+     benefit from Cloudflare's WAF and DDoS protection.
 
 
-3. PRODUCTION DEPLOYMENT (Raspberry Pi)
+3. DATA PROTECTION & ENCRYPTION
 ------------------------------------------------------------------------
-To update the live site with new branding or configurations:
+Sensitive data is encrypted at rest using AES-256-GCM.
 
-1. Pull latest code:    git pull origin main
-2. Update .env:         nano .env
-3. Build and Start:     ./start.sh
-4. Clean Stack:         ./clean.sh
+- Master Key: Located in .env (MASTER_ENCRYPTION_KEY). 
+  WARNING: If lost, all user data (emails/names) becomes unreadable.
+- User Keys: Each user has a unique key stored in their database record.
+- Blind Index: emailHash allows searching by email without storing 
+  plain-text emails.
 
 
-4. DATABASE MANAGEMENT
+4. PRODUCTION DEPLOYMENT (Raspberry Pi)
 ------------------------------------------------------------------------
-The system supports a protected and unprotected seeding mechanism.
-
-- Seed live database: 
-  POST https://api.bestflats.vip/seed/unprotected?force=true
-
-- MongoDB Path (External USB):
-  /media/benyedde/rootfs/bestflats_data/mongo
+1. Update: git pull origin main
+2. Refresh .env: rm .env && ./start.sh
+3. Database Path: /media/benyedde/rootfs/bestflats_data/mongo
+4. Podman Storage: /media/benyedde/rootfs/podman-storage
 
 
-5. SYSTEM MONITORING
+5. MONITORING
 ------------------------------------------------------------------------
-View real-time logs on your Raspberry Pi:
-
-- Backend:  podman logs -f backend
-- Frontend: podman logs -f frontend
-- Database: podman logs -f mongo
-- Emails:   http://<your-pi-ip>:8025 (Mailpit Dashboard)
-
+- API Logs:    podman logs -f backend
+- UI Logs:     podman logs -f frontend
+- Email Logs:  http://bestflats.vip:8025 (Mailpit)
 
 ========================================================================
 bestflats.vip Intelligence - Confidential
