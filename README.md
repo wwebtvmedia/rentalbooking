@@ -15,8 +15,17 @@ Prerequisites:
 The project includes helper scripts to manage the stack:
 
 ```bash
+# System Initialization (Reboot / First Run)
+# Kills old containers, mounts external storage (/dev/sda2), 
+# cleans cache, and starts the stack.
+./init.sh
+
 # Start the full stack (builds, starts containers, and seeds database)
 ./start.sh
+
+# Automated Startup Check
+# Verifies environment and starts services if not running.
+./setup-reboot.sh
 
 # Stop and remove all containers (clean cleanup)
 ./clean.sh
@@ -96,6 +105,7 @@ npm run dev
 The project uses JWT tokens for authentication.
 - Admin tokens: grant `roles: ['admin']` and can create/delete availabilities.
 - Guest (customer) tokens: passwordless login via `POST /auth/login` (email + optional name to create account).
+- **Public Access:** Residence listings (`GET /apartments`) and details are public and do not require a token.
 
 Generate a local admin token with the included helper:
 
@@ -107,6 +117,27 @@ node src/auth/create_token.js --id=admin1 --name=Admin --email=admin@example.com
 ```
 
 Use `Authorization: Bearer <token>` header for admin-only requests.
+
+---
+
+## 🛡️ Security & Forensic Intelligence
+
+The platform implements enterprise-grade security and monitoring:
+
+### Anti-Abuse Protection
+- **Mailer Rate-Limiting:** The magic link system automatically blocks "mail bombing". If an email address requests more than **3 links within 15 minutes**, further requests are rejected to protect SMTP reputation.
+- **Forensic IDs:** Every critical request (Auth, Mailer, MCP Agent) generates a unique `forensicId`. This ID is injected into all related log entries, allowing security teams to trace a specific request lifecycle from initiation to database mutation.
+
+### Model Context Protocol (MCP) Security
+- **Tunnel Authentication:** The MCP agent endpoints (`/mcp`) are protected. Only authenticated sessions (internal JWT or verified Google OIDC) can access the agent tunnel.
+- **Audit Logging:** Every agentic tool call (e.g., `create_customer`, `create_apartment`) is logged with full forensic metadata for audit trails.
+
+### Forensic Log Example
+```json
+{"level":40,"time":1777236223500,"forensicId":"kp7v1a","email":"victim@example.com","count":3,"msg":"MAIL_ABUSE_DETECTED: Rate limit exceeded"}
+```
+
+---
 
 ### Magic link sign-in (passwordless)
 
@@ -262,6 +293,39 @@ There is a `.env.example` with suggested variables in the repository.
 - In development, you can expose the local server using `ngrok` and point Stripe webhooks to the generated URL.
 
 
+
+---
+
+## 🔄 Automated Reboot Setup (Linux)
+
+To ensure the platform starts automatically after a server reboot, you can configure the `setup-reboot.sh` script as a systemd service.
+
+1. **Create the service file:**
+   `sudo nano /etc/systemd/system/rental-booking.service`
+
+2. **Paste the following configuration:**
+   ```ini
+   [Unit]
+   Description=Rental Platform Automated Startup
+   After=network.target podman.service
+   Requires=podman.service
+
+   [Service]
+   Type=oneshot
+   RemainAfterExit=yes
+   User=pc
+   WorkingDirectory=/home/pc/sby/rentalbooking
+   ExecStart=/home/pc/sby/rentalbooking/setup-reboot.sh
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. **Enable the service:**
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable rental-booking.service
+   ```
 
 ---
 
