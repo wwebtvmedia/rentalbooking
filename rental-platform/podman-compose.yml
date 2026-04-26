@@ -15,17 +15,17 @@ services:
     container_name: backend
     restart: always
     environment:
-      - SMTP_URL=smtp://mailhog:1025
+      - SMTP_URL=smtp://mailpit:1025
     env_file: .env
     ports:
       - "4000:4000"
     depends_on:
       - mongo
-      - mailhog
+      - mailpit
 
-  mailhog:
-    image: docker.io/mailhog/mailhog
-    container_name: mailhog
+  mailpit:
+    image: docker.io/axllent/mailpit
+    container_name: mailpit
     ports:
       - "1025:1025"
       - "8025:8025"
