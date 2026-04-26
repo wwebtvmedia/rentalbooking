@@ -26,12 +26,11 @@ test.describe('Production Live Verification', () => {
     await expect(page.locator('h1')).toContainText('The Collection.');
   });
 
-  test('API connectivity check', async ({ page }) => {
-    // Check if the API responds (we expect a 200 or 403, but not a connection failure)
+  test('API connectivity check (expecting privacy gate)', async ({ page }) => {
+    // Check if the API responds with 401 (Unauthorized) as expected for non-members
     const response = await page.request.get('https://api.bestflats.vip/apartments');
-    expect(response.status()).toBeLessThan(500); 
-    
+    expect(response.status()).toBe(401); 
     const data = await response.json();
-    console.log('Production API Apartment Count:', data.length);
+    expect(data.error).toContain('Token required');
   });
 });
