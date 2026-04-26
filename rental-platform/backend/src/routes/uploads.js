@@ -78,18 +78,6 @@ router.post('/', async (req, res, next) => {
   }
 
   return res.status(400).json({ error: 'Multipart upload not available and no JSON body provided' });
-  try {
-    const buf = Buffer.from(b64, 'base64');
-    const ext = path.extname(filename) || '.bin';
-    const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    const outPath = path.join(uploadDir, newName);
-    await fs.promises.writeFile(outPath, buf);
-    const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-    const url = `${origin}/uploads/${newName}`;
-    return res.json({ url, filename: newName });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
 });
 
 export default router;

@@ -4,6 +4,6 @@ export const INSTAGRAM_URL = process.env.NEXT_PUBLIC_INSTAGRAM_URL || 'https://w
 
 export function assetUrl(path?: string) {
   if (!path) return '/placeholder.svg';
-  if (path.startsWith('http') || path.startsWith('/uploads/appartement/')) return path;
+  if (path.startsWith('http')) return path;
   return `${API_BASE_URL}${path}`;
 }
