@@ -93,6 +93,9 @@ app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
+app.use('/admin/platform', (await import('./routes/admin.js')).default);
+app.use('/admin/host', (await import('./routes/host.js')).default);
+app.use('/admin/concierge', (await import('./routes/concierge.js')).default);
 
 // Global error handler
 app.use((err, req, res, next) => {

@@ -13,6 +13,9 @@ const PAGES = [
   { path: '/vision', title: 'Our Vision', heading: 'The Future of Living.' },
   { path: '/team', title: 'Join the Team', heading: 'Build the Exceptional.' },
   { path: '/journal', title: 'The Journal', heading: 'Journal.' },
+  { path: '/admin/dashboard', title: 'Platform Intelligence', heading: 'Platform Dashboard.' },
+  { path: '/host/dashboard', title: 'Host Management', heading: 'Host Analytics.' },
+  { path: '/concierge/dashboard', title: 'Concierge Intelligence', heading: 'Concierge Hub.' },
 ];
 
 test.describe('Pages Reachability', () => {

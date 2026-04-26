@@ -13,7 +13,10 @@ const ApartmentSchema = new mongoose.Schema({
   // Fixed deposit amount in cents (optional). If set, this is charged as the guarantee deposit when booking.
   depositAmount: { type: Number },
   // Ethereum/Base address for receiving USDC deposits
-  ethAddress: { type: String }
+  ethAddress: { type: String },
+  // Owner and Service Staff
+  hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  assignedConciergeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 export default mongoose.model('Apartment', ApartmentSchema);
