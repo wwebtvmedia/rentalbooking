@@ -8,7 +8,7 @@ test.describe('Production Inventory Verification', () => {
     // We expect 3 distinct property titles to eventually load
     const properties = [
       'Comfortable and Convenient Stay in the Heart of Suresnes',
-      'Nabel Bungalow by the Sea',
+      'Club Farah Nabeul Bungalow',
       'Azure Antibes Flat'
     ];
 

@@ -23,21 +23,21 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
   {
     id: 'nabel-bungalow',
     _id: 'nabel-bungalow',
-    name: 'Nabel Bungalow by the Sea',
-    lat: 43.3082,
-    lon: 6.6372,
-    address: 'Plage de Nabel, 83120 Sainte-Maxime, France',
-    description: `Experience the ultimate coastal retreat in the Nabel Bungalow. This eco-conscious residence features open-air living spaces, a private beach path, and artisanal decor.
-Wake up to the sound of the waves and enjoy breakfast on your sun-drenched deck. The bungalow offers total privacy and a minimalist design that connects you with nature.
-Perfect for couples or solo travelers seeking a peaceful escape with modern amenities.`,
-    smallDescription: 'Bohemian luxury just steps from the sand',
+    name: 'Club Farah Nabeul Bungalow',
+    lat: 36.4448,
+    lon: 10.7365,
+    address: 'Club Farah, Nabeul 8000, Tunisia',
+    description: `Discover the vibrant beauty of Nabeul at the Club Farah Bungalow. Located steps from the Mediterranean and just a short walk from the Nabeul City Hall, this residence offers a perfect blend of culture and relaxation.
+The bungalow features traditional Tunisian architecture with modern luxury finishes, a private garden, and direct beach access.
+Experience the famous Nabeul markets and craftsmanship while staying in the city's most exclusive beach club area.`,
+    smallDescription: 'Beachside luxury in the heart of Tunisia',
     pricePerNight: 90,
     photos: [
       'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
     ],
-    rules: 'No loud music after sunset. No pets allowed. Respect the beach environment.',
+    rules: 'No smoking, no parties, no pets. Respect the neighbors.',
     depositAmount: 80000,
   },
   {
