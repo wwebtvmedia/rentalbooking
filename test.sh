@@ -3,7 +3,7 @@ set -e
 
 echo "🧪 Running Backend Non-Regression Tests..."
 cd rental-platform/backend
-npm test
+NODE_OPTIONS="--experimental-vm-modules" npm test
 
 echo -e "\n🧪 Running Frontend E2E Tests..."
 cd ../frontend

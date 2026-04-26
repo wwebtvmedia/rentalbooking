@@ -2,5 +2,5 @@ module.exports = {
   testEnvironment: 'node',
   testTimeout: 30000,
   verbose: true,
-  // extensionsToTreatAsEsm: ['.js']
+  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.test.mjs'],
 };
