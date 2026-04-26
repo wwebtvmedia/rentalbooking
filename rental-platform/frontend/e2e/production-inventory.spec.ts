@@ -22,9 +22,11 @@ test.describe('Production Inventory Verification', () => {
     await page.goto('https://www.bestflats.vip');
     
     // Check Antibes Price
-    await expect(page.locator('text=$350')).toBeVisible();
+    await expect(page.locator('text=$180')).toBeVisible();
     // Check Nabel Price
-    await expect(page.locator('text=$420')).toBeVisible();
+    await expect(page.locator('text=$90')).toBeVisible();
+    // Check Suresnes Price
+    await expect(page.locator('text=$160')).toBeVisible();
   });
 
 });
