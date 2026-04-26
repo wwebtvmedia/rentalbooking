@@ -22,7 +22,7 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
       '/uploads/appartement/cuisine.avif',
       '/uploads/appartement/douche.avif'
     ],
-    rules: 'No smoking, no parties, respect the neighbors.',
+    rules: 'No smoking, no parties, no pets. Respect the neighbors.',
     depositAmount: 50000 
   },
   {
@@ -40,7 +40,7 @@ Perfect for couples or solo travelers seeking a peaceful escape with modern amen
       'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
     ],
-    rules: 'No loud music after sunset. Respect the beach environment.',
+    rules: 'No loud music after sunset. No pets allowed. Respect the beach environment.',
     depositAmount: 80000 
   },
   {
@@ -58,7 +58,7 @@ Enjoy the best of the Côte d'Azur, with the Picasso Museum and pristine beaches
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1600607687940-4e2a09695d51?auto=format&fit=crop&w=1200&q=80'
     ],
-    rules: 'Small pets allowed. No parties.',
+    rules: 'Strictly no pets. No parties. Respect the historical building.',
     depositAmount: 50000 
   }
 ];
