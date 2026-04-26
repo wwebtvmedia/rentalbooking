@@ -15,6 +15,46 @@ router.get('/me', (req, res) => {
   res.json(req.user);
 });
 
+// POST /auth/login - passwordless login (email only for demo/test)
+router.post('/login', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    if (!email) return res.status(400).json({ error: 'Missing email' });
+
+    const emailHash = blindIndex(email);
+    let user = await User.findOne({ emailHash, role: 'guest' });
+
+    if (!user) {
+      const userKey = generateUserKey();
+      const nameToUse = name || 'New Guest';
+      user = await User.create({
+        fullName: encrypt(nameToUse, userKey),
+        email: encrypt(email, userKey),
+        emailHash,
+        role: 'guest',
+        userKey
+      });
+    }
+
+    const fullName = decrypt(user.fullName, user.userKey);
+    const userEmail = decrypt(user.email, user.userKey);
+
+    const token = createToken({
+      id: user._id.toString(),
+      name: fullName,
+      email: userEmail,
+      roles: [user.role]
+    });
+
+    res.json({
+      token,
+      user: { id: user._id, fullName, email: userEmail, role: user.role }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /auth/magic - request a magic sign-in link
 router.post('/magic', async (req, res) => {
   try {

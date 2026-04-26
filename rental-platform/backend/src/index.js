@@ -77,8 +77,14 @@ app.use(cors({
 }));
 
 // MCP SSE routes
-app.get("/mcp", authMiddleware, handleMcp);
-app.post("/mcp/messages", authMiddleware, handleMcpMessages);
+app.get("/mcp", authMiddleware, (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}, handleMcp);
+app.post("/mcp/messages", authMiddleware, (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}, handleMcpMessages);
 
 // Stripe webhooks need the raw request body, so this route must be mounted before express.json().
 app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {

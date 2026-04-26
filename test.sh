@@ -7,6 +7,6 @@ npm test
 
 echo -e "\n🧪 Running Frontend E2E Tests..."
 cd ../frontend
-npx playwright test
+PORT=3000 npx playwright test
 
 echo -e "\n✅ All tests passed successfully!"

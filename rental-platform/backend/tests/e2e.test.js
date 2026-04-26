@@ -171,7 +171,7 @@ describe('E2E non-regression tests', () => {
     const payload = { name: 'E2E Apartment', description: 'Test apartment', photos: [up.body.url], pricePerNight: 120, rules: 'No smoking', lat: 51.5, lon: -0.1 };
     const res = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send(payload).expect(201);
     expect(res.body._id).toBeTruthy();
-    const list = await request.get('/apartments').expect(200);
+    const list = await request.get('/apartments').set('Authorization', `Bearer ${adminToken}`).expect(200);
     const found = list.body.some(a => a._id === res.body._id);
     expect(found).toBe(true);
   });
@@ -241,7 +241,7 @@ describe('E2E non-regression tests', () => {
     expect(checkoutRes.body.message).toBe('Checkout locked for agent session');
 
     // 4. Verify the session is locked
-    const lockedItem = await request.get(`/ucp/item/${ucpId}`).expect(200);
+    const lockedItem = await request.get(`/ucp/item/${ucpId}`).set('Authorization', `Bearer ${adminToken}`).expect(200);
     expect(lockedItem.body.checkoutSession.status).toBe('LOCKED');
     expect(lockedItem.body.checkoutSession.paymentMandateId).toBe('test-mandate-456');
   });
@@ -277,6 +277,7 @@ describe('E2E non-regression tests', () => {
     // 3. Fetch the UCP item directly
     const ucpItemRes = await request
       .get(`/ucp/item/${ucpId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
     // 4. Verify that the itemId field is populated
@@ -294,17 +295,19 @@ describe('E2E non-regression tests', () => {
     // create booking for that apartment
     const start = new Date(Date.now() + 96*3600*1000).toISOString();
     const end = new Date(Date.now() + 97*3600*1000).toISOString();
-    const bRes = await request.post('/bookings').send({ fullName: 'Deposit Guest', email: 'dg@e2e.test', apartmentId: aptId, start, end }).expect(201);
+    const bRes = await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Deposit Guest', email: 'dg@e2e.test', apartmentId: aptId, start, end }).expect(201);
 
     // create intent
-    const pi = await request.post('/payments/create-intent').send({ bookingId: bRes.body._id }).expect(200);
+    const pi = await request.post('/payments/create-intent').set('Authorization', `Bearer ${bobToken}`).send({ bookingId: bRes.body._id }).expect(200);
     expect(pi.body.paymentIntentId).toBeTruthy();
   });
 
   test('MCP SSE endpoint is accessible', async () => {
     // We use a custom fetch to verify the headers without waiting for the full response
     // since SSE is a long-lived connection.
-    const res = await fetch('http://localhost:5001/mcp');
+    const res = await fetch('http://localhost:5001/mcp', {
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/event-stream');
     // Important: we don't await res.text() or res.json() as it would hang.

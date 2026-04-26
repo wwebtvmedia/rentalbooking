@@ -44,8 +44,11 @@ export async function authMiddleware(req, res, next) {
 
 export function requireRole(role) {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     // 'verified_agent' is a virtual role granted to valid Google Tokens
-    if (req.user && Array.isArray(req.user.roles) && (req.user.roles.includes(role) || req.user.roles.includes('verified_agent'))) {
+    if (Array.isArray(req.user.roles) && (req.user.roles.includes(role) || req.user.roles.includes('verified_agent'))) {
       return next();
     }
     return res.status(403).json({ error: 'Forbidden' });
