@@ -57,30 +57,28 @@ router.post('/magic/verify', async (req, res) => {
     mt.used = true;
     await mt.save();
 
-    let user = await User.findOne({ email: payload.email });
+    // Find or create user based on BOTH email AND role
+    // This enforces strict separation of profiles
+    const roleToUse = payload.requestedRole || 'guest';
+    let user = await User.findOne({ email: payload.email, role: roleToUse });
+    
     if (!user) {
       const nameToUse = mt.fullName || 'New Member';
       user = await User.create({ 
         fullName: nameToUse, 
         email: payload.email, 
-        roles: [payload.requestedRole || 'guest'] 
+        role: roleToUse
       });
-    } else {
-        // Add the role if they don't have it
-        if (payload.requestedRole && !user.roles.includes(payload.requestedRole)) {
-            user.roles.push(payload.requestedRole);
-            await user.save();
-        }
     }
 
     const sessionToken = createToken({ 
         id: user._id.toString(), 
         name: user.fullName, 
         email: user.email, 
-        roles: user.roles 
+        roles: [user.role] // Keep as array for middleware compatibility
     }, '14d');
 
-    res.json({ token: sessionToken, user: { id: user._id, fullName: user.fullName, email: user.email, roles: user.roles } });
+    res.json({ token: sessionToken, user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } });
   } catch (err) {
     res.status(400).json({ error: 'Invalid or expired token' });
   }
