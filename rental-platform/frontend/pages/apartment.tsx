@@ -11,6 +11,8 @@ export default function ApartmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {

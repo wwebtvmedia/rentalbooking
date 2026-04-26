@@ -21,6 +21,8 @@ const CalendarPage = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [apartment, setApartment] = useState<any>(null);
 
+  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+
   useEffect(() => {
     const fetchApartment = async () => {
       if (!apartmentId) return setApartment(null);

@@ -11,6 +11,8 @@ export default function AdminPage() {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
 
+  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+
   const loadList = async () => {
     try {
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
