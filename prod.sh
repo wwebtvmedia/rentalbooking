@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Starting Rental Platform in PRODUCTION mode..."
+echo "🚀 Starting bestflats.vip PRODUCTION Deployment..."
 
 # 1. Environment Setup
 if [ ! -f .env ]; then
@@ -38,6 +38,26 @@ if ! grep -q "NEXT_PUBLIC_BACKEND_URL=http" .env || grep -q "localhost:4000" .en
     if [ -n "$PUB_BE" ]; then
         sed -i "s|NEXT_PUBLIC_BACKEND_URL=.*|NEXT_PUBLIC_BACKEND_URL=$PUB_BE|" .env
     fi
+fi
+
+# 1c. Secure Agent & Encryption Setup
+echo "🔐 Configuring Security Layers..."
+if ! grep -q "GOOGLE_CLIENT_ID=." .env || grep -q "apps.googleusercontent.com" .env; then
+    read -p "Enter your Google Client ID for Agents (from Cloud Console) [Optional]: " GOOGLE_ID
+    if [ -n "$GOOGLE_ID" ]; then
+        # Ensure the key exists in .env
+        if grep -q "GOOGLE_CLIENT_ID=" .env; then
+            sed -i "s|GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_ID|" .env
+        else
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_ID" >> .env
+        fi
+    fi
+fi
+
+if grep -q "MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value" .env; then
+    echo "🔑 Generating secure MASTER_ENCRYPTION_KEY..."
+    M_KEY=$(openssl rand -base64 32)
+    sed -i "s|MASTER_ENCRYPTION_KEY=.*|MASTER_ENCRYPTION_KEY=$M_KEY|" .env
 fi
 
 # 2. Cleanup and Build
