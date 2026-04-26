@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import MagicToken from '../models/MagicToken.js';
 import { sendMagicLink } from '../auth/mailer.js';
 import jwt from 'jsonwebtoken';
+import { encrypt, decrypt, generateUserKey, blindIndex } from '../lib/encryption.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -20,9 +21,7 @@ router.post('/magic', async (req, res) => {
     let { email, redirectUrl, fullName, role } = req.body;
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // Role is now explicitly passed from the frontend based on the subdomain
     const requestedRole = role || 'guest';
-
     const jti = uuidv4();
     const token = jwt.sign({ jti, email, requestedRole, purpose: 'magic' }, process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '15m' });
 
@@ -57,28 +56,39 @@ router.post('/magic/verify', async (req, res) => {
     mt.used = true;
     await mt.save();
 
-    // Find or create user based on BOTH email AND role
-    // This enforces strict separation of profiles
     const roleToUse = payload.requestedRole || 'guest';
-    let user = await User.findOne({ email: payload.email, role: roleToUse });
+    const emailHash = blindIndex(payload.email);
+    
+    let user = await User.findOne({ emailHash, role: roleToUse });
     
     if (!user) {
+      const userKey = generateUserKey();
       const nameToUse = mt.fullName || 'New Member';
+      
       user = await User.create({ 
-        fullName: nameToUse, 
-        email: payload.email, 
-        role: roleToUse
+        fullName: encrypt(nameToUse, userKey), 
+        email: encrypt(payload.email, userKey),
+        emailHash,
+        role: roleToUse,
+        userKey
       });
     }
 
+    // Decrypt details for the frontend response
+    const fullName = decrypt(user.fullName, user.userKey);
+    const email = decrypt(user.email, user.userKey);
+
     const sessionToken = createToken({ 
         id: user._id.toString(), 
-        name: user.fullName, 
-        email: user.email, 
-        roles: [user.role] // Keep as array for middleware compatibility
+        name: fullName, 
+        email: email, 
+        roles: [user.role]
     }, '14d');
 
-    res.json({ token: sessionToken, user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } });
+    res.json({ 
+        token: sessionToken, 
+        user: { id: user._id, fullName, email, role: user.role } 
+    });
   } catch (err) {
     res.status(400).json({ error: 'Invalid or expired token' });
   }

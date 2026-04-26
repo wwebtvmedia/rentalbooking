@@ -24,11 +24,15 @@ if [ ! -f .env ]; then
     echo "📄 Creating .env from .env.example..."
     cp rental-platform/.env.example .env
     
-    # Generate a random secret for JWT
-    RANDOM_SECRET=$(openssl rand -base64 32)
-    sed -i "s|change-me-to-a-secure-random-value|$RANDOM_SECRET|g" .env
+    # Generate random secrets
+    RANDOM_JWT=$(openssl rand -base64 32)
+    RANDOM_MASTER=$(openssl rand -base64 32)
     
-    echo "✅ .env created with fresh AUTH_JWT_SECRET."
+    # Use | as delimiter to avoid issues with / in base64
+    sed -i "s|AUTH_JWT_SECRET=change-me-to-a-secure-random-value|AUTH_JWT_SECRET=$RANDOM_JWT|g" .env
+    sed -i "s|MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value|MASTER_ENCRYPTION_KEY=$RANDOM_MASTER|g" .env
+    
+    echo "✅ .env created with fresh secrets."
 else
     echo "✅ .env file already exists."
 fi
