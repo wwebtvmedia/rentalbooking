@@ -22,14 +22,18 @@ export function getMcpServer() {
       email: z.string().email()
     },
     async (input, extra) => {
+      const forensicId = Math.random().toString(36).substring(7);
+      logger.info({ forensicId, input }, "MCP_TOOL_CALL: create_customer initiated");
+
       // Simple auth check
       const auth = extra?.requestInfo?.headers?.authorization || "";
       if (!auth.includes("admin-token") && process.env.NODE_ENV !== 'development') {
+        logger.warn({ forensicId }, "MCP_TOOL_CALL: Unauthorized attempt on create_customer");
         throw new Error("Unauthorized");
       }
 
       const customer = await Customer.create(input);
-      logger.info({ customerId: customer.id }, "Customer created via MCP");
+      logger.info({ forensicId, customerId: customer.id }, "MCP_TOOL_CALL: Customer created successfully");
 
       return {
         content: [
@@ -54,9 +58,13 @@ export function getMcpServer() {
       depositAmount: z.number().optional()
     },
     async (input, extra) => {
+      const forensicId = Math.random().toString(36).substring(7);
+      logger.info({ forensicId, input }, "MCP_TOOL_CALL: create_apartment initiated");
+
       // Simple auth check
       const auth = extra?.requestInfo?.headers?.authorization || "";
       if (!auth.includes("admin-token") && process.env.NODE_ENV !== 'development') {
+        logger.warn({ forensicId }, "MCP_TOOL_CALL: Unauthorized attempt on create_apartment");
         throw new Error("Unauthorized");
       }
       let { lat, lon } = input;
@@ -84,7 +92,7 @@ export function getMcpServer() {
       };
 
       const apt = await Apartment.create(payload);
-      logger.info({ apartmentId: apt.id }, "Apartment created via MCP");
+      logger.info({ forensicId, apartmentId: apt.id }, "MCP_TOOL_CALL: Apartment created successfully");
 
       return {
         content: [

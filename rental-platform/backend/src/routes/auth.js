@@ -57,8 +57,11 @@ router.post('/login', async (req, res) => {
 
 // POST /auth/magic - request a magic sign-in link
 router.post('/magic', async (req, res) => {
+  const forensicId = Math.random().toString(36).substring(7);
   try {
     let { email, redirectUrl, fullName, role } = req.body;
+    logger.info({ forensicId, email, role }, 'AUTH_MAGIC_REQUEST: Initiated');
+
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
     const requestedRole = role || 'guest';
@@ -71,31 +74,45 @@ router.post('/magic', async (req, res) => {
     const callback = redirectUrl || (process.env.FRONTEND_ORIGIN || 'http://localhost:3000') + '/magic-callback';
     const link = `${callback}?token=${encodeURIComponent(token)}`;
 
-    if (process.env.NODE_ENV === 'test') return res.json({ ok: true, token });
+    if (process.env.NODE_ENV === 'test') {
+      logger.info({ forensicId, email }, 'AUTH_MAGIC_REQUEST: Completed (test mode)');
+      return res.json({ ok: true, token });
+    }
 
     if (process.env.AUTH_LOG_EMAIL_TOKEN === 'true') {
-        logger.info({ email, token }, 'DEBUG_MAGIC_TOKEN_GENERATED');
+        logger.info({ forensicId, email, token }, 'AUTH_MAGIC_DEBUG: Token generated');
     }
 
     await sendMagicLink(email, link);
+    logger.info({ forensicId, email }, 'AUTH_MAGIC_REQUEST: Link sent successfully');
     res.json({ ok: true, message: `Magic link sent for ${requestedRole} profile` });
   } catch (err) {
+    logger.error({ forensicId, err: err.message }, 'AUTH_MAGIC_REQUEST: Failed');
     res.status(500).json({ error: err.message });
   }
 });
 
 // POST /auth/magic/verify - exchange magic token for session token
 router.post('/magic/verify', async (req, res) => {
+  const forensicId = Math.random().toString(36).substring(7);
   try {
     const { token } = req.body;
+    logger.info({ forensicId }, 'AUTH_VERIFY_REQUEST: Initiated');
+
     if (!token) return res.status(400).json({ error: 'Missing token' });
     const secret = process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
     const payload = jwt.verify(token, secret);
     
-    if (payload.purpose !== 'magic' || !payload.jti) return res.status(400).json({ error: 'Invalid token' });
+    if (payload.purpose !== 'magic' || !payload.jti) {
+        logger.warn({ forensicId }, 'AUTH_VERIFY_REQUEST: Invalid token purpose or jti');
+        return res.status(400).json({ error: 'Invalid token' });
+    }
 
     const mt = await MagicToken.findOne({ jti: payload.jti });
-    if (!mt || mt.used) return res.status(400).json({ error: 'Token used or expired' });
+    if (!mt || mt.used) {
+        logger.warn({ forensicId, jti: payload.jti }, 'AUTH_VERIFY_REQUEST: Token used or not found');
+        return res.status(400).json({ error: 'Token used or expired' });
+    }
 
     mt.used = true;
     await mt.save();
@@ -106,6 +123,7 @@ router.post('/magic/verify', async (req, res) => {
     let user = await User.findOne({ emailHash, role: roleToUse });
     
     if (!user) {
+      logger.info({ forensicId, role: roleToUse }, 'AUTH_VERIFY_REQUEST: Creating new user');
       const userKey = generateUserKey();
       const nameToUse = mt.fullName || 'New Member';
       
@@ -129,11 +147,14 @@ router.post('/magic/verify', async (req, res) => {
         roles: [user.role]
     }, '14d');
 
+    logger.info({ forensicId, userId: user._id, role: user.role }, 'AUTH_VERIFY_REQUEST: Successful login');
+
     res.json({ 
         token: sessionToken, 
         user: { id: user._id, fullName, email, role: user.role } 
     });
   } catch (err) {
+    logger.error({ forensicId, err: err.message }, 'AUTH_VERIFY_REQUEST: Error');
     res.status(400).json({ error: 'Invalid or expired token' });
   }
 });
