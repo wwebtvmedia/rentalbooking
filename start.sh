@@ -15,10 +15,12 @@ command -v podman-compose >/dev/null 2>&1 || { echo >&2 "❌ podman-compose is r
 if [ ! -f .env ]; then
     echo "📄 Creating .env from .env.example..."
     cp rental-platform/.env.example .env
+    
     # Generate a random secret for JWT
     RANDOM_SECRET=$(openssl rand -base64 32)
-    sed -i "s/change-me-to-a-secure-random-value/$RANDOM_SECRET/g" .env
-    echo "✅ .env created with a fresh AUTH_JWT_SECRET."
+    sed -i "s|change-me-to-a-secure-random-value|$RANDOM_SECRET|g" .env
+    
+    echo "✅ .env created with bestflats.vip defaults and fresh AUTH_JWT_SECRET."
 else
     echo "✅ .env file already exists."
 fi
