@@ -62,7 +62,15 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches any in the allowedOrigins list
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Dynamic Subdomain Check: Allow anything ending in .bestflats.vip
+    const isBestFlatsSubdomain = /^https?:\/\/(.*?\.)?bestflats\.vip$/.test(origin);
+    if (isBestFlatsSubdomain) return callback(null, true);
+
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
