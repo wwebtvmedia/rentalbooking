@@ -4,11 +4,9 @@ test.describe('API Security Enforcement', () => {
 
   const BACKEND_URL = 'https://api.bestflats.vip';
 
-  test('GET /apartments should return 401 without token', async ({ request }) => {
+  test('GET /apartments should be PUBLIC (200 OK)', async ({ request }) => {
     const response = await request.get(`${BACKEND_URL}/apartments`);
-    expect(response.status()).toBe(401);
-    const data = await response.json();
-    expect(data.error).toContain('Token required');
+    expect(response.status()).toBe(200);
   });
 
   test('GET /bookings should return 401 without token', async ({ request }) => {
