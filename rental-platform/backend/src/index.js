@@ -7,6 +7,7 @@ import availabilityRoutes from "./routes/availabilities.js";
 import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
+import { authMiddleware } from "./auth/index.js";
 import { getMcpServer } from "./mcp/server.js";
 import cors from "cors";
 import helmet from "helmet";
