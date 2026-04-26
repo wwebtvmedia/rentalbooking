@@ -50,7 +50,7 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
 });
 
 // Unprotected seed endpoint for deployment scripts
-router.post('/unprotected', async (req, res) => {
+router.get('/unprotected', async (req, res) => {
   // Bypasses authMiddleware check
   try {
     const count = await Apartment.countDocuments();
