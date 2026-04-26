@@ -13,11 +13,14 @@ export default function PlatformDashboard() {
     try {
       setLoading(true);
       const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      // We no longer pass an explicit token; Cloudflare verifies the client certificate
-      // The browser automatically attaches the installed certificate to the request.
+      const adminKey = process.env.NEXT_PUBLIC_PLATFORM_ADMIN_KEY;
+      
+      const headers: any = { };
+      if (adminKey) headers['X-Platform-Admin-Key'] = adminKey;
+
       const [statsRes, custRes] = await Promise.all([
-        axios.get(`${base}/admin/platform/stats`, { withCredentials: true }),
-        axios.get(`${base}/admin/platform/customers`, { withCredentials: true })
+        axios.get(`${base}/admin/platform/stats`, { headers, withCredentials: true }),
+        axios.get(`${base}/admin/platform/customers`, { headers, withCredentials: true })
       ]);
       setStats(statsRes.data);
       setCustomers(custRes.data);

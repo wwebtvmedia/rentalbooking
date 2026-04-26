@@ -27,10 +27,13 @@ if [ ! -f .env ]; then
     # Generate random secrets
     RANDOM_JWT=$(openssl rand -base64 32)
     RANDOM_MASTER=$(openssl rand -base64 32)
+    RANDOM_ADMIN=$(openssl rand -base64 32)
     
     # Use | as delimiter to avoid issues with / in base64
     sed -i "s|AUTH_JWT_SECRET=change-me-to-a-secure-random-value|AUTH_JWT_SECRET=$RANDOM_JWT|g" .env
     sed -i "s|MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value|MASTER_ENCRYPTION_KEY=$RANDOM_MASTER|g" .env
+    sed -i "s|PLATFORM_ADMIN_KEY=change-me-to-a-secure-random-value|PLATFORM_ADMIN_KEY=$RANDOM_ADMIN|g" .env
+    sed -i "s|NEXT_PUBLIC_PLATFORM_ADMIN_KEY=change-me-to-a-secure-random-value|NEXT_PUBLIC_PLATFORM_ADMIN_KEY=$RANDOM_ADMIN|g" .env
     
     echo "✅ .env created with fresh secrets."
 else

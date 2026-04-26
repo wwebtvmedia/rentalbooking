@@ -3,22 +3,8 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
-
-const FALLBACK_APARTMENTS = [
-  { 
-    id: 'suresnes-modern-stay', 
-    name: 'Comfortable and Convenient Stay in the Heart of Suresnes',
-    lat: 48.87297687408006, 
-    lon: 2.2262012958526616, 
-    address: 'Rue Honoré d\'Estienne d\'Orves, Suresnes, 92150, France',
-    description: `Located in the charming town of Suresnes, just outside Paris, this modern one-bedroom apartment offers a cozy living space with a comfortable lounge, fully equipped kitchen, and in-unit washing machine.
-Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.
-Prime Location Near Paris the apartment is ideally located close to top Parisian landmarks, including the Palais des Congrès (6 km), and Eiffel Tower (7 km).`,
-    smallDescription: 'Modern one-bedroom apartment just outside Paris',
-    pricePerNight: 285,
-    photos: ['/uploads/appartement/salon.avif', '/uploads/appartement/chambre.avif', '/uploads/appartement/cuisine.avif', '/uploads/appartement/douche.avif']
-  }
-];
+import { API_BASE_URL, BRAND_NAME, INSTAGRAM_URL, assetUrl } from '../lib/config';
+import { FALLBACK_APARTMENTS } from '../lib/fallbackApartments';
 
 export default function Home() {
   const router = useRouter();
@@ -29,7 +15,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [requestedRole, setRequestedRole] = useState('guest');
 
-  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+  const brandName = BRAND_NAME;
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -45,8 +31,7 @@ export default function Home() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-        const res = await axios.get(`${base}/apartments`);
+        const res = await axios.get(`${API_BASE_URL}/apartments`);
         setApartments(res.data.length ? res.data : FALLBACK_APARTMENTS);
       } catch (err) {
         setApartments(FALLBACK_APARTMENTS);
@@ -70,15 +55,14 @@ export default function Home() {
   const handleCreate = async () => {
     if (!fullName || !email) return alert('Name and email required');
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      const res = await axios.post(`${base}/auth/magic`, { 
+      const res = await axios.post(`${API_BASE_URL}/auth/magic`, { 
         email, 
         fullName, 
         role: requestedRole,
         redirectUrl: window.location.origin + '/magic-callback' 
       });
       if (res.data?.token) {
-        const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
+        const verify = await axios.post(`${API_BASE_URL}/auth/magic/verify`, { token: res.data.token });
         saveGuest(verify.data.user);
         localStorage.setItem('token', verify.data.token);
         alert('Welcome! Account created');
@@ -93,14 +77,13 @@ export default function Home() {
   const handleLogin = async () => {
     if (!email) return alert('Email required');
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      const res = await axios.post(`${base}/auth/magic`, { 
+      const res = await axios.post(`${API_BASE_URL}/auth/magic`, { 
         email, 
         role: requestedRole,
         redirectUrl: window.location.origin + '/magic-callback' 
       });
       if (res.data?.token) {
-        const verify = await axios.post(`${base}/auth/magic/verify`, { token: res.data.token });
+        const verify = await axios.post(`${API_BASE_URL}/auth/magic/verify`, { token: res.data.token });
         saveGuest(verify.data.user);
         localStorage.setItem('token', verify.data.token);
         alert('Logged in');
@@ -118,25 +101,14 @@ export default function Home() {
     setGuest(null);
   };
 
-  const getImgUrl = (path: string) => {
-    if (!path) return '/placeholder.png';
-    if (path.startsWith('http')) return path;
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-    return `${base}${path}`;
-  };
-
   return (
     <div className="fade-in-up">
       <Head>
         <title>{brandName} | Excellence in Living</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </Head>
 
       <header className="site-header">
         <div className="container site-header-inner">
-          {/* Left: Logo & Brand */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-4 group">
               <div className="w-10 h-10 lg:w-12 lg:h-12 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-500">
@@ -146,14 +118,12 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Center: Navigation (Desktop Only) */}
           <nav className="hidden lg:flex justify-center items-center gap-12 text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">
             <Link href="/collections" className="hover:text-black transition">Collections</Link>
             <Link href="/concierge" className="hover:text-black transition">Concierge</Link>
             <Link href="/owners" className="hover:text-black transition">Owners</Link>
           </nav>
 
-          {/* Right: Actions */}
           <div className="flex items-center justify-end gap-2 sm:gap-8">
             {guest ? (
               <div className="flex items-center gap-4">
@@ -168,17 +138,16 @@ export default function Home() {
                 Sign In
               </button>
             )}
-            <button className="btn btn-primary !py-3 px-4 sm:!px-8 text-[10px] whitespace-nowrap">Book Now</button>
+            <Link href="/collections" className="btn btn-primary !py-3 px-4 sm:!px-8 text-[10px] whitespace-nowrap">Book Now</Link>
           </div>
         </div>
       </header>
 
       <main>
-        {/* Cinematic Hero */}
         <section className="relative h-[92vh] flex items-center overflow-hidden bg-black">
           <div className="absolute inset-0 z-0">
             <img 
-              src={apartments[0]?.photos?.[0] || FALLBACK_APARTMENTS[0].photos[0]} 
+              src={assetUrl(apartments[0]?.photos?.[0] || FALLBACK_APARTMENTS[0].photos[0])} 
               className="w-full h-full object-cover opacity-60 scale-110" 
               style={{ animation: 'heroScale 20s infinite alternate' }}
               alt="Hero"
@@ -217,7 +186,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Listings Grid */}
         <section className="py-32 bg-white">
           <div className="container">
             <div className="flex flex-col lg:flex-row justify-between items-end mb-20 gap-8">
@@ -226,10 +194,10 @@ export default function Home() {
                 <h3 className="text-4xl lg:text-5xl font-extrabold tracking-tight">Exceptional by nature.</h3>
               </div>
               <div className="flex gap-12 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                <button className="text-black border-b-2 border-black pb-2">All Stays</button>
-                <button className="hover:text-black transition pb-2">Penthouses</button>
-                <button className="hover:text-black transition pb-2">Lofts</button>
-                <button className="hover:text-black transition pb-2">Villas</button>
+                <button type="button" aria-pressed="true" className="text-black border-b-2 border-black pb-2">All Stays</button>
+                <button type="button" disabled title="Coming soon" className="opacity-40 cursor-not-allowed pb-2">Penthouses</button>
+                <button type="button" disabled title="Coming soon" className="opacity-40 cursor-not-allowed pb-2">Lofts</button>
+                <button type="button" disabled title="Coming soon" className="opacity-40 cursor-not-allowed pb-2">Villas</button>
               </div>
             </div>
 
@@ -242,7 +210,7 @@ export default function Home() {
                 {apartments.map((apt) => (
                   <Link href={`/apartment?id=${apt._id || apt.id}`} key={apt._id || apt.id} className="group cursor-pointer">
                     <div className="relative aspect-[4/5] mb-8 overflow-hidden rounded-lg">
-                      <img src={getImgUrl(apt.photos?.[0])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={apt.name} />
+                      <img src={assetUrl(apt.photos?.[0])} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={apt.name} />
                       <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
                       <div className="absolute top-8 left-8">
                         <span className="bg-white/90 backdrop-blur-md px-4 py-2 text-[10px] font-black uppercase tracking-widest shadow-sm">Reserve</span>
@@ -265,7 +233,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Membership Section */}
         {!guest && (
           <section id="auth" className="py-40 bg-gray-50">
             <div className="container">
@@ -364,7 +331,7 @@ export default function Home() {
             <div className="flex gap-12">
               <Link href="/privacy" className="hover:text-black transition">Privacy</Link>
               <Link href="/terms" className="hover:text-black transition">Terms</Link>
-              <Link href="#" className="hover:text-black transition">Instagram</Link>
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-black transition">Instagram</a>
             </div>
           </div>
         </div>

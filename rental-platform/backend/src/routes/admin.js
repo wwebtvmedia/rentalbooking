@@ -9,6 +9,12 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/stats', requireRole('admin'), async (req, res) => {
+  // Secondary Security Layer: Check for Platform Admin Key
+  const adminKey = req.headers['x-platform-admin-key'];
+  if (process.env.NODE_ENV === 'production' && adminKey !== process.env.PLATFORM_ADMIN_KEY) {
+      return res.status(403).json({ error: 'Invalid Platform Admin Key' });
+  }
+
   try {
     const flatCount = await Apartment.countDocuments();
     const totalBookings = await Booking.countDocuments();

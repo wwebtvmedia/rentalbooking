@@ -21,7 +21,6 @@ async function handleMcp(req, res) {
   const server = getMcpServer();
   await server.connect(transport);
 
-  // Store transport for message handling
   if (transport.sessionId) {
     mcpTransports.set(transport.sessionId, transport);
     res.on('close', () => {
@@ -42,25 +41,42 @@ const app = express();
 
 // Security Headers
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" } // Required to allow images to load in frontend
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'test', // Skip rate limiting in tests
+  skip: (req) => process.env.NODE_ENV === 'test',
 });
 app.use(limiter);
 
-// Allow the frontend origin. Adjust or restrict as needed for production.
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true }));
+// Allow one or more frontend origins. Set FRONTEND_ORIGIN as a comma-separated list in production.
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
 
 // MCP SSE routes
 app.get("/mcp", authMiddleware, handleMcp);
 app.post("/mcp/messages", authMiddleware, handleMcpMessages);
+
+// Stripe webhooks need the raw request body, so this route must be mounted before express.json().
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const { stripeWebhookHandler } = await import('./routes/webhooks.js');
+  return stripeWebhookHandler(req, res);
+});
 
 app.use(express.json());
 
@@ -94,6 +110,7 @@ app.use('/apartments', (await import('./routes/apartments.js')).default);
 app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
+app.use('/payments', (await import('./routes/payments.js')).default);
 app.use('/admin/platform', (await import('./routes/admin.js')).default);
 app.use('/admin/host', (await import('./routes/host.js')).default);
 app.use('/admin/concierge', (await import('./routes/concierge.js')).default);
@@ -105,13 +122,6 @@ app.use((err, req, res, next) => {
   res.status(status).json({
     error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message
   });
-});
-
-// Payments and webhooks
-app.use('/payments', (await import('./routes/payments.js')).default);
-app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
-  const { stripeWebhookHandler } = await import('./routes/webhooks.js');
-  return stripeWebhookHandler(req, res);
 });
 
 app.listen(PORT, () => {
