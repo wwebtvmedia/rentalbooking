@@ -13,7 +13,7 @@ const apartments = [
 Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.
 Prime Location Near Paris the apartment is ideally located close to top Parisian landmarks, including the Palais des Congrès (6 km), and Eiffel Tower (7 km).`,
     address: 'Rue Honoré d\'Estienne d\'Orves, Suresnes, 92150, France',
-    pricePerNight: 285,
+    pricePerNight: 160,
     lat: 48.87297687408006,
     lon: 2.2262012958526616,
     photos: [
@@ -32,7 +32,7 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
 Wake up to the sound of the waves and enjoy breakfast on your sun-drenched deck. The bungalow offers total privacy and a minimalist design that connects you with nature.
 Perfect for couples or solo travelers seeking a peaceful escape with modern amenities.`,
     address: 'Plage de Nabel, 83120 Sainte-Maxime, France',
-    pricePerNight: 420,
+    pricePerNight: 90,
     lat: 43.3082,
     lon: 6.6372,
     photos: [
@@ -50,7 +50,7 @@ Perfect for couples or solo travelers seeking a peaceful escape with modern amen
 Featuring views of the Mediterranean and the Port Vauban, the apartment offers a spacious living room, a marble bathroom, and high-speed fiber internet.
 Enjoy the best of the Côte d'Azur, with the Picasso Museum and pristine beaches just a short walk away.`,
     address: 'Old Town, 06600 Antibes, France',
-    pricePerNight: 350,
+    pricePerNight: 180,
     lat: 43.5804,
     lon: 7.1251,
     photos: [

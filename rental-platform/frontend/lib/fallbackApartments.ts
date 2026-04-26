@@ -10,7 +10,7 @@ export const FALLBACK_APARTMENTS = [
 Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.
 Prime Location Near Paris the apartment is ideally located close to top Parisian landmarks, including the Palais des Congres (6 km), and Eiffel Tower (7 km).`,
     smallDescription: 'Modern one-bedroom apartment just outside Paris',
-    pricePerNight: 285,
+    pricePerNight: 160,
     photos: [
       '/uploads/appartement/salon.avif',
       '/uploads/appartement/chambre.avif',
@@ -31,7 +31,7 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
 Wake up to the sound of the waves and enjoy breakfast on your sun-drenched deck. The bungalow offers total privacy and a minimalist design that connects you with nature.
 Perfect for couples or solo travelers seeking a peaceful escape with modern amenities.`,
     smallDescription: 'Bohemian luxury just steps from the sand',
-    pricePerNight: 420,
+    pricePerNight: 90,
     photos: [
       'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1200&q=80',
@@ -51,7 +51,7 @@ Perfect for couples or solo travelers seeking a peaceful escape with modern amen
 Featuring views of the Mediterranean and the Port Vauban, the apartment offers a spacious living room, a marble bathroom, and high-speed fiber internet.
 Enjoy the best of the Côte d'Azur, with the Picasso Museum and pristine beaches just a short walk away.`,
     smallDescription: 'Classic elegance in the heart of the French Riviera',
-    pricePerNight: 350,
+    pricePerNight: 180,
     photos: [
       'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
