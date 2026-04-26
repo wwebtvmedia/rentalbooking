@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function StoryPage() {
   return (
-    <Layout title="Our Story | bestflats.vip">
+    <Layout title="Our Story">
       <section className="py-40">
         <div className="container max-w-4xl text-center">
           <span className="text-gold font-black text-xs uppercase tracking-[0.4em] mb-6 inline-block">Established 2026</span>

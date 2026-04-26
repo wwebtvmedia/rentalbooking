@@ -28,10 +28,13 @@ export default function Home() {
   const [apartments, setApartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+  const currentYear = new Date().getFullYear();
+
   useEffect(() => {
     const fetch = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
         const res = await axios.get(`${base}/apartments`);
         setApartments(res.data.length ? res.data : FALLBACK_APARTMENTS);
       } catch (err) {
@@ -105,7 +108,7 @@ export default function Home() {
   return (
     <div className="fade-in-up">
       <Head>
-        <title>bestflats.vip | Excellence in Living</title>
+        <title>{brandName} | Excellence in Living</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -119,7 +122,7 @@ export default function Home() {
               <div className="w-10 h-10 lg:w-12 lg:h-12 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-500">
                 <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
               </div>
-              <span className="brand-text lg:text-2xl">bestflats.vip</span>
+              <span className="brand-text lg:text-2xl">{brandName}</span>
             </Link>
           </div>
 
@@ -308,7 +311,7 @@ export default function Home() {
                 <div className="w-10 h-10 overflow-hidden rounded-lg">
                   <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
                 </div>
-                <span className="brand-text text-xl">bestflats.vip</span>
+                <span className="brand-text text-xl">{brandName}</span>
               </Link>
               <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
                 We are dedicated to the art of fine living. Our mission is to connect discerning travelers with the world's most exceptional private residences.
@@ -335,7 +338,7 @@ export default function Home() {
           </div>
           
           <div className="mt-32 pt-12 border-t border-gray-50 flex flex-col md:flex-row justify-between items-center gap-8 text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">
-            <p>© 2026 bestflats.vip by treeforfive. All Rights Reserved.</p>
+            <p>© {currentYear} {brandName}. All Rights Reserved.</p>
             <div className="flex gap-12">
               <Link href="/privacy" className="hover:text-black transition">Privacy</Link>
               <Link href="/terms" className="hover:text-black transition">Terms</Link>

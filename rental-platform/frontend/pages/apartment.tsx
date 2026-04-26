@@ -40,7 +40,7 @@ export default function ApartmentPage() {
   return (
     <div className="fade-in-up">
       <Head>
-        <title>{apartment.name} | bestflats.vip</title>
+        <title>{apartment.name} | {brandName}</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </Head>
 
@@ -50,7 +50,7 @@ export default function ApartmentPage() {
             <div className="w-12 h-12 overflow-hidden rounded-lg">
               <img src="/tree4fivelogo.png" alt="logo" className="w-full h-full object-cover" />
             </div>
-            <span className="brand-text">bestflats.vip</span>
+            <span className="brand-text">{brandName}</span>
           </Link>
           <button onClick={() => router.back()} className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition">
             ← Return to Collection
@@ -98,7 +98,7 @@ export default function ApartmentPage() {
                 <div className="flex items-center gap-8 pb-12 mb-12 border-b border-gray-100">
                   <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center text-white font-black text-2xl">DF</div>
                   <div>
-                    <h2 className="text-2xl font-black mb-1">Residence Managed by bestflats.vip</h2>
+                    <h2 className="text-2xl font-black mb-1">Residence Managed by {brandName}</h2>
                     <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Architectural Significance · Professional Concierge</p>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export default function ApartmentPage() {
       </main>
 
       <footer className="bg-white border-t border-gray-100 py-20 text-center">
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">bestflats.vip · Excellence in Living</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">{brandName} · Excellence in Living</p>
       </footer>
     </div>
   );

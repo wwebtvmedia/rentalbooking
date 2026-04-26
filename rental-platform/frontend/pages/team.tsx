@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function TeamPage() {
   return (
-    <Layout title="Join the Team | bestflats.vip">
+    <Layout title="Join the Team">
       <section className="py-40">
         <div className="container max-w-4xl">
           <h1 className="text-4xl font-black mb-12">Build the <br/> Exceptional.</h1>

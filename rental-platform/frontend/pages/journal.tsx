@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function JournalPage() {
   return (
-    <Layout title="The Journal | bestflats.vip">
+    <Layout title="The Journal">
       <section className="py-40">
         <div className="container">
           <h1 className="text-4xl font-black mb-16 uppercase tracking-[0.2em] text-center">Journal.</h1>

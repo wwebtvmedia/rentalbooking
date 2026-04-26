@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function TermsPage() {
   return (
-    <Layout title="Terms of Service | bestflats.vip">
+    <Layout title="Terms of Service">
       <section className="py-40">
         <div className="container max-w-4xl">
           <h1 className="text-4xl font-black mb-12">Terms of Service.</h1>

@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function OwnersPage() {
   return (
-    <Layout title="For Property Owners | bestflats.vip">
+    <Layout title="For Property Owners">
       <section className="py-40">
         <div className="container">
           <div className="max-w-4xl">

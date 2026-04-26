@@ -16,6 +16,8 @@ export default function PaymentPage() {
   const [showCrypto, setShowCrypto] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -24,7 +26,7 @@ export default function PaymentPage() {
     if (!bookingId) return;
     (async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
         const res = await axios.get(`${base}/bookings/${bookingId}`);
         console.log('PAYMENT_PAGE_BOOKING_LOADED:', res.data);
         setBooking(res.data);
@@ -47,7 +49,7 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
       const r = await axios.post(`${base}/payments/create-intent`, { bookingId });
       setClientSecret(r.data.clientSecret || null);
 
@@ -95,7 +97,7 @@ export default function PaymentPage() {
       });
 
       if (hash) {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
         await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash: hash, currency: 'USDC' });
         alert('Transaction submitted! Redirecting to calendar...');
         router.push('/calendar');
@@ -111,7 +113,7 @@ export default function PaymentPage() {
     if (!txHash) return alert('Please enter the transaction hash');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
       await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash, currency: 'USDC' });
       alert('Payment recorded. Redirecting...');
       router.push('/calendar');
@@ -126,7 +128,7 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
       await axios.post(`${base}/payments/${bookingId}/simulate-success`);
       alert('Simulated payment success');
       router.push('/calendar');
@@ -146,7 +148,7 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <Head>
-        <title>Complete Payment | bestflats.vip</title>
+        <title>Complete Payment | {brandName}</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
@@ -155,9 +157,9 @@ export default function PaymentPage() {
         <div className="container site-header-inner">
           <Link href="/" className="flex items-center">
             <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center mr-2">
-              <img src="/tree4fivelogo.png" alt="bestflats.vip logo" className="w-full h-full object-cover" />
+              <img src="/tree4fivelogo.png" alt={`${brandName} logo`} className="w-full h-full object-cover" />
             </div>
-            <span className="brand-text">bestflats.vip</span>
+            <span className="brand-text">{brandName}</span>
           </Link>
           <button onClick={() => router.back()} className="btn btn-outline text-xs py-1 px-3">
             Cancel

@@ -5,8 +5,6 @@
 
 set -e
 
-echo "🚀 Starting bestflats.vip Deployment..."
-
 # --- USB DISK OPTIMIZATION ---
 # Use the USB disk for temporary build files to prevent SD card exhaustion
 USB_TMP="/media/benyedde/rootfs/tmp"
@@ -30,10 +28,14 @@ if [ ! -f .env ]; then
     RANDOM_SECRET=$(openssl rand -base64 32)
     sed -i "s|change-me-to-a-secure-random-value|$RANDOM_SECRET|g" .env
     
-    echo "✅ .env created with bestflats.vip defaults and fresh AUTH_JWT_SECRET."
+    echo "✅ .env created with fresh AUTH_JWT_SECRET."
 else
     echo "✅ .env file already exists."
 fi
+
+# Load brand name for script messages
+BRAND_NAME=$(grep NEXT_PUBLIC_BRAND_NAME .env | cut -d '=' -f2 || echo "bestflats.vip")
+echo "🚀 Starting $BRAND_NAME Deployment..."
 
 # Ensure .env is available in the rental-platform directory for podman-compose
 cp .env rental-platform/.env

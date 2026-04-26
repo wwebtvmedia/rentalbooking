@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 export default function ConciergePage() {
   return (
-    <Layout title="Concierge Services | bestflats.vip">
+    <Layout title="Concierge Services">
       <section className="py-40 bg-black text-white min-h-[80vh] flex items-center">
         <div className="container">
           <div className="max-w-4xl">
