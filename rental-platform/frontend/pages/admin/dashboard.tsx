@@ -31,6 +31,22 @@ export default function PlatformDashboard() {
     }
   };
 
+  const removeUser = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this member?')) return;
+    try {
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const adminKey = process.env.NEXT_PUBLIC_PLATFORM_ADMIN_KEY;
+      const headers: any = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+      if (adminKey) headers['X-Platform-Admin-Key'] = adminKey;
+
+      await axios.delete(`${base}/admin/platform/users/${id}`, { headers });
+      setCustomers(customers.filter(c => c._id !== id));
+      alert('Member removed');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to remove user');
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -120,8 +136,14 @@ export default function PlatformDashboard() {
                            <p className="font-bold text-sm mb-1 group-hover:text-gold transition-colors">{c.fullName}</p>
                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">{c.email}</p>
                          </div>
-                         <div className="text-right">
+                         <div className="flex items-center gap-4">
                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-300">{new Date(c.createdAt).toLocaleDateString()}</p>
+                            <button 
+                              onClick={() => removeUser(c._id)}
+                              className="opacity-0 group-hover:opacity-100 text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-all"
+                            >
+                              Remove
+                            </button>
                          </div>
                        </div>
                      ))}

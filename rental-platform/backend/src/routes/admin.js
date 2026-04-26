@@ -93,4 +93,21 @@ router.get('/customers', requireRole('admin'), async (req, res) => {
   }
 });
 
+router.delete('/users/:id', requireRole('admin'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Prevent deleting yourself
+    if (user._id.toString() === req.user.id) {
+        return res.status(400).json({ error: 'Cannot remove your own admin account' });
+    }
+
+    await user.deleteOne();
+    res.json({ ok: true, message: 'User removed successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

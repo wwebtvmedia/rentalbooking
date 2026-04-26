@@ -33,6 +33,10 @@ router.post('/magic', async (req, res) => {
 
     if (process.env.NODE_ENV === 'test') return res.json({ ok: true, token });
 
+    if (process.env.AUTH_LOG_EMAIL_TOKEN === 'true') {
+        logger.info({ email, token }, 'DEBUG_MAGIC_TOKEN_GENERATED');
+    }
+
     await sendMagicLink(email, link);
     res.json({ ok: true, message: `Magic link sent for ${requestedRole} profile` });
   } catch (err) {
