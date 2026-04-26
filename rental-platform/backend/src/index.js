@@ -105,14 +105,19 @@ app.use('/uploads', express.static(uploadDir, {
 
 const PORT = process.env.PORT || 4000;
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    logger.info("MongoDB connected");
-  })
-  .catch((err) => {
-    logger.error({ err }, "MongoDB connection error");
-    process.exit(1);
-  });
+const connectWithRetry = () => {
+  logger.info("Attempting MongoDB connection...");
+  return mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+      logger.info("MongoDB connected successfully");
+    })
+    .catch((err) => {
+      logger.error({ err: err.message }, "MongoDB connection failed, retrying in 5 seconds...");
+      setTimeout(connectWithRetry, 5000);
+    });
+};
+
+connectWithRetry();
 
 app.use("/customers", customerRoutes);
 app.use("/bookings", bookingRoutes);
