@@ -11,6 +11,7 @@ router.use(authMiddleware);
 
 // GET /apartments - list
 router.get('/', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Token required to view residences' });
   try {
     const list = await Apartment.find().sort({ name: 1 });
     res.json(list);
@@ -21,6 +22,7 @@ router.get('/', async (req, res) => {
 
 // GET /apartments/:id
 router.get('/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Token required to view residence details' });
   try {
     const apt = await Apartment.findById(req.params.id);
     if (!apt) return res.status(404).json({ error: 'Not found' });

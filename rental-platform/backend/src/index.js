@@ -58,8 +58,8 @@ app.use(limiter);
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true }));
 
 // MCP SSE routes
-app.get("/mcp", handleMcp);
-app.post("/mcp/messages", handleMcpMessages);
+app.get("/mcp", authMiddleware, handleMcp);
+app.post("/mcp/messages", authMiddleware, handleMcpMessages);
 
 app.use(express.json());
 

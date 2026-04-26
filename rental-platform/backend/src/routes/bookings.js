@@ -15,6 +15,7 @@ function overlapsQuery(start, end) {
 
 // List bookings
 router.get("/", async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Token required' });
   const q = {};
   if (req.query.apartmentId) q.apartmentId = req.query.apartmentId;
   const bookings = await Booking.find(q).sort({ start: 1 }).limit(500);
@@ -23,6 +24,7 @@ router.get("/", async (req, res) => {
 
 // GET /bookings/:id
 router.get('/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Token required' });
   try {
     const b = await Booking.findById(req.params.id);
     if (!b) return res.status(404).json({ error: 'Not found' });
@@ -33,8 +35,8 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create booking (checks conflicts and creates blocking availability)
-// Creating a booking is still allowed to unauthenticated users (public booking).
 router.post("/", validate(bookingSchema), async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Token required to book a residence' });
   const session = await mongoose.startSession();
   try {
     let booking;
