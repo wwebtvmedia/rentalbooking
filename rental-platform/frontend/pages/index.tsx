@@ -31,9 +31,12 @@ export default function Home() {
   useEffect(() => {
     const fetch = async () => {
       try {
+        console.log('DEBUG: Fetching from', `${API_BASE_URL}/apartments`);
         const res = await axios.get(`${API_BASE_URL}/apartments`);
+        console.log('DEBUG: Apartments found:', res.data.length);
         setApartments(res.data.length ? res.data : FALLBACK_APARTMENTS);
-      } catch (err) {
+      } catch (err: any) {
+        console.error('DEBUG: API Fetch Error:', err.message);
         setApartments(FALLBACK_APARTMENTS);
       } finally {
         setLoading(false);
