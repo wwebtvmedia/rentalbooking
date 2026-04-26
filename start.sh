@@ -5,7 +5,17 @@
 
 set -e
 
-echo "🚀 Starting Rental Platform Deployment..."
+echo "🚀 Starting bestflats.vip Deployment..."
+
+# --- USB DISK OPTIMIZATION ---
+# Use the USB disk for temporary build files to prevent SD card exhaustion
+USB_TMP="/media/benyedde/rootfs/tmp"
+if [ -d "/media/benyedde/rootfs" ]; then
+    mkdir -p "$USB_TMP"
+    export TMPDIR="$USB_TMP"
+    export PODMAN_TMPDIR="$USB_TMP"
+    echo "💾 Using USB Disk for temporary build storage."
+fi
 
 # 1. Check for Prerequisites
 command -v podman >/dev/null 2>&1 || { echo >&2 "❌ Podman is required but not installed. Aborting."; exit 1; }
