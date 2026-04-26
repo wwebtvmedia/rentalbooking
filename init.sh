@@ -24,9 +24,10 @@ echo "🧹 Cleaning up podman-storage tmp..."
 rm -rf /media/benyedde/rootfs/podman-storage/tmp/
 mkdir -p /media/benyedde/rootfs/podman-storage/tmp/
 
-# Ensure MongoDB data directory exists
-echo "📁 Ensuring MongoDB data directory exists..."
+# Ensure MongoDB data directory exists and is world-writable for the container user
+echo "📁 Ensuring MongoDB data directory exists with full access..."
 mkdir -p /media/benyedde/rootfs/bestflats_data/mongo
+sudo chmod -R 777 /media/benyedde/rootfs/bestflats_data/mongo
 
 echo "✅ System prepared. Launching stack..."
 ./start.sh

@@ -4,7 +4,7 @@ services:
     container_name: mongo
     restart: always
     volumes:
-      - /media/benyedde/rootfs/bestflats_data/mongo:/data/db
+      - /media/benyedde/rootfs/bestflats_data/mongo:/data/db:z
     ports:
       - "27017:27017"
 
