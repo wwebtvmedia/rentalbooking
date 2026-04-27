@@ -22,8 +22,22 @@ router.get('/', async (req, res) => {
 // GET /apartments/:id
 router.get('/:id', async (req, res) => {
   try {
-    const apt = await Apartment.findById(req.params.id);
-    if (!apt) return res.status(404).json({ error: 'Not found' });
+    const { id } = req.params;
+    let apt;
+    
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        apt = await Apartment.findById(id);
+    } else {
+        // Support searching by name or a custom slug field if we add one, 
+        // for now we'll match by a case-insensitive name part or exact match
+        apt = await Apartment.findOne({ 
+            $or: [
+                { name: { $regex: new RegExp(id.replace(/-/g, ' '), 'i') } }
+            ] 
+        });
+    }
+
+    if (!apt) return res.status(404).json({ error: 'Residence not found in database' });
     res.json(apt);
   } catch (err) {
     res.status(500).json({ error: err.message });

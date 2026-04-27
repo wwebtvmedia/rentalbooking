@@ -97,15 +97,6 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 
 app.use(express.json());
 
-// serve uploaded files with explicit CORS for cross-domain asset loading
-const uploadDir = path.join(process.cwd(), 'uploads');
-app.use('/uploads', express.static(uploadDir, {
-  setHeaders: (res) => {
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Access-Control-Allow-Origin', '*');
-  }
-}));
-
 const PORT = process.env.PORT || 4000;
 
 const connectWithRetry = () => {

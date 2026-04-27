@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
 import { API_BASE_URL, BRAND_NAME, INSTAGRAM_URL, assetUrl } from '../lib/config';
-import { FALLBACK_APARTMENTS } from '../lib/fallbackApartments';
 
 export default function Home() {
   const router = useRouter();
@@ -34,10 +33,10 @@ export default function Home() {
         console.log('DEBUG: Fetching from', `${API_BASE_URL}/apartments`);
         const res = await axios.get(`${API_BASE_URL}/apartments`);
         console.log('DEBUG: Apartments found:', res.data.length);
-        setApartments(res.data.length ? res.data : FALLBACK_APARTMENTS);
+        setApartments(res.data);
       } catch (err: any) {
         console.error('DEBUG: API Fetch Error:', err.message);
-        setApartments(FALLBACK_APARTMENTS);
+        setApartments([]);
       } finally {
         setLoading(false);
       }
@@ -149,12 +148,14 @@ export default function Home() {
       <main>
         <section className="relative h-[92vh] flex items-center overflow-hidden bg-black">
           <div className="absolute inset-0 z-0">
-            <img 
-              src={assetUrl(apartments[0]?.photos?.[0] || FALLBACK_APARTMENTS[0].photos[0])} 
-              className="w-full h-full object-cover opacity-60 scale-110" 
-              style={{ animation: 'heroScale 20s infinite alternate' }}
-              alt="Hero"
-            />
+            {apartments.length > 0 && (
+              <img 
+                src={assetUrl(apartments[0].photos?.[0])} 
+                className="w-full h-full object-cover opacity-60 scale-110" 
+                style={{ animation: 'heroScale 20s infinite alternate' }}
+                alt="Hero"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
           </div>
           
@@ -184,7 +185,7 @@ export default function Home() {
             <div className="w-px h-10 bg-white/20" />
             <div className="flex flex-col items-start min-w-[120px]">
               <span className="text-[9px] font-black text-gold uppercase tracking-[0.3em] mb-2">Inventory</span>
-              <span className="text-white font-bold text-sm">12 Active Stays</span>
+              <span className="text-white font-bold text-sm">{apartments.length} Active Stays</span>
             </div>
           </div>
         </section>

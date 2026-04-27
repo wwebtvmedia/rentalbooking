@@ -4,7 +4,6 @@ import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 import { assetUrl } from '../lib/config';
-import { FALLBACK_APARTMENTS, findFallbackApartment } from '../lib/fallbackApartments';
 
 export default function ApartmentPage() {
   const router = useRouter();
@@ -23,14 +22,8 @@ export default function ApartmentPage() {
         const res = await axios.get(`${base}/apartments/${id}`);
         setApartment(res.data);
       } catch (err: any) {
-        console.error('API Fetch Error, using fallback:', err.message);
-        // Fallback to local data if API fails or apartment not found
-        const fallback = findFallbackApartment(id as string);
-        if (fallback) {
-            setApartment(fallback);
-        } else {
-            setError(err.response?.data?.error || 'Failed to load residence');
-        }
+        console.error('API Fetch Error:', err.message);
+        setError(err.response?.data?.error || 'Residence not found in database');
       } finally {
         setLoading(false);
       }
