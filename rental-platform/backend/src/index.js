@@ -97,28 +97,6 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 
 app.use(express.json());
 
-// Diagnostic route
-app.get('/debug/uploads', (req, res) => {
-  const dir = path.join(process.cwd(), 'uploads');
-  const walk = (d) => {
-    let results = [];
-    if (!fs.existsSync(d)) return results;
-    const list = fs.readdirSync(d);
-    list.forEach(file => {
-        file = path.join(d, file);
-        const stat = fs.statSync(file);
-        if (stat && stat.isDirectory()) results = results.concat(walk(file));
-        else results.push(file.replace(process.cwd(), ''));
-    });
-    return results;
-  };
-  try {
-    res.json({ cwd: process.cwd(), files: walk(dir) });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // serve uploaded files with explicit CORS for cross-domain asset loading
 const uploadDir = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadDir, {

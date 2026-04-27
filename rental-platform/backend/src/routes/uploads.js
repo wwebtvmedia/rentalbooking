@@ -1,26 +1,16 @@
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
+import Media from '../models/Media.js';
 
 let multerAvailable = true;
 let upload = null;
 try {
-  // try to import multer; if not installed, fall back to JSON base64 upload support
-  // eslint-disable-next-line import/no-extraneous-dependencies
   const multerPkg = await import('multer');
   const multer = multerPkg.default;
-
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname) || '';
-      const base = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      cb(null, base + ext);
-    }
-  });
+  // Use memory storage since we are saving to DB
+  const storage = multer.memoryStorage();
 
   function fileFilter(req, file, cb) {
-    // allow common image types
     if (/^image\//.test(file.mimetype)) return cb(null, true);
     cb(new Error('Only image files allowed'));
   }
@@ -32,52 +22,68 @@ try {
 
 const router = express.Router();
 
-const uploadDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// GET /uploads/:filename - Serve from DB
+router.get('/:filename', async (req, res) => {
+  try {
+    const media = await Media.findOne({ filename: req.params.filename });
+    if (!media) return res.status(404).send('Not found');
 
-// POST /uploads - accepts multipart form-data file='file' OR JSON { filename, b64 }
-router.post('/', async (req, res, next) => {
-  // If the client is sending JSON, prefer the JSON (base64) fallback regardless of multer availability.
+    res.set('Content-Type', media.contentType);
+    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send(media.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /uploads - Store in DB
+router.post('/', async (req, res) => {
   if (req.is('application/json')) {
     const { b64, filename } = req.body || {};
-    if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename in JSON body' });
+    if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename' });
     
-    // Simple extension check
-    const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
     const ext = path.extname(filename).toLowerCase();
-    if (!allowedExts.includes(ext)) {
-      return res.status(400).json({ error: 'Only image files allowed' });
-    }
-
+    const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    
     try {
       const buf = Buffer.from(b64, 'base64');
-      // Size limit (5MB)
-      if (buf.length > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: 'File too large (max 5MB)' });
-      }
-      
-      const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-      const outPath = path.join(uploadDir, newName);
-      await fs.promises.writeFile(outPath, buf);
+      await Media.create({
+        filename: newName,
+        contentType: `image/${ext.replace('.', '')}`,
+        data: buf
+      });
+
       const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-      const url = `${origin}/uploads/${newName}`;
-      return res.json({ url, filename: newName });
+      return res.json({ url: `${origin}/uploads/${newName}`, filename: newName });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
   }
 
   if (multerAvailable && upload) {
-    return upload.single('file')(req, res, (err) => {
+    return upload.single('file')(req, res, async (err) => {
       if (err) return res.status(400).json({ error: err.message });
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-      const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-      const url = `${origin}/uploads/${req.file.filename}`;
-      return res.json({ url, filename: req.file.filename });
+      if (!req.file) return res.status(400).json({ error: 'No file' });
+
+      const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+      
+      try {
+        await Media.create({
+          filename: newName,
+          contentType: req.file.mimetype,
+          data: req.file.buffer
+        });
+
+        const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
+        return res.json({ url: `${origin}/uploads/${newName}`, filename: newName });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
     });
   }
 
-  return res.status(400).json({ error: 'Multipart upload not available and no JSON body provided' });
+  return res.status(400).json({ error: 'Upload method not supported' });
 });
 
 export default router;

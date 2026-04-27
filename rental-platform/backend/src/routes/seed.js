@@ -1,5 +1,8 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import Apartment from '../models/Apartment.js';
+import Media from '../models/Media.js';
 import { logger } from '../logger.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
 
@@ -17,10 +20,10 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
     lat: 48.87297687408006,
     lon: 2.2262012958526616,
     photos: [
-      '/uploads/appartement/salon.avif',
-      '/uploads/appartement/chambre.avif',
-      '/uploads/appartement/cuisine.avif',
-      '/uploads/appartement/douche.avif'
+      '/uploads/salon.avif',
+      '/uploads/chambre.avif',
+      '/uploads/cuisine.avif',
+      '/uploads/douche.avif'
     ],
     rules: 'No smoking, no parties, no pets. Respect the neighbors.',
     depositAmount: 50000 
@@ -65,8 +68,37 @@ Enjoy the best of the Côte d'Azur, with the Picasso Museum and pristine beaches
 
 router.use(authMiddleware);
 
+// Utility to seed media files from the filesystem to MongoDB
+async function seedMedia() {
+    const uploadDir = path.join(process.cwd(), 'uploads/appartement');
+    if (!fs.existsSync(uploadDir)) {
+        logger.warn('Seed: uploads/appartement directory not found, skipping media seed.');
+        return;
+    }
+
+    const files = fs.readdirSync(uploadDir);
+    for (const file of files) {
+        if (file.endsWith('.avif')) {
+            const filePath = path.join(uploadDir, file);
+            const data = fs.readFileSync(filePath);
+            // Store as plain filename in DB, served via /uploads/:filename
+            await Media.findOneAndUpdate(
+                { filename: file },
+                { 
+                    filename: file, 
+                    contentType: 'image/avif', 
+                    data: data 
+                },
+                { upsert: true }
+            );
+            logger.info({ file }, 'Seed: Imported media to database');
+        }
+    }
+}
+
 router.post('/', requireRole('admin'), async (req, res) => {
   try {
+    await seedMedia();
     if (req.query.force === 'true') {
       await Apartment.deleteMany({});
       logger.info('Cleared existing apartments due to force=true');
@@ -90,6 +122,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
 router.get('/unprotected', async (req, res) => {
   // Bypasses authMiddleware check
   try {
+    await seedMedia();
     const count = await Apartment.countDocuments();
     if (count > 0 && req.query.force !== 'true') {
       return res.json({ message: 'Database already has apartments.' });
