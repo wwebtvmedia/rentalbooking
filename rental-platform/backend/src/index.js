@@ -1,5 +1,9 @@
 import express from "express";
 import mongoose from "mongoose";
+import cors from "cors";
+import helmet from "helmet";
+import path from 'path';
+import { rateLimit } from "express-rate-limit";
 import { logger } from "./logger.js";
 import customerRoutes from "./routes/customers.js";
 import bookingRoutes from "./routes/bookings.js";
@@ -9,9 +13,6 @@ import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
 import { authMiddleware } from "./auth/index.js";
 import { getMcpServer } from "./mcp/server.js";
-import cors from "cors";
-import helmet from "helmet";
-import { rateLimit } from "express-rate-limit";
 
 const mcpTransports = new Map();
 
@@ -94,12 +95,12 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 
 app.use(express.json());
 
-// serve uploaded files
-import path from 'path';
+// serve uploaded files with explicit CORS for cross-domain asset loading
 const uploadDir = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadDir, {
   setHeaders: (res) => {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Access-Control-Allow-Origin', '*');
   }
 }));
 
