@@ -5,14 +5,23 @@
 
 set -e
 
-# --- USB DISK OPTIMIZATION ---
-# Use the USB disk for temporary build files to prevent SD card exhaustion
-USB_TMP="/media/benyedde/rootfs/tmp"
-if [ -d "/media/benyedde/rootfs" ]; then
-    mkdir -p "$USB_TMP"
-    export TMPDIR="$USB_TMP"
-    export PODMAN_TMPDIR="$USB_TMP"
-    echo "💾 Using USB Disk for temporary build storage."
+# --- ARCHITECTURE & STORAGE OPTIMIZATION ---
+ARCH=$(uname -m)
+if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
+    echo "🔍 Raspberry Pi (ARM) detected. Applying storage optimizations."
+    # Use the USB disk for temporary build files and data
+    USB_ROOT="/media/benyedde/rootfs"
+    if [ -d "$USB_ROOT" ]; then
+        mkdir -p "$USB_ROOT/tmp"
+        export TMPDIR="$USB_ROOT/tmp"
+        export PODMAN_TMPDIR="$USB_ROOT/tmp"
+        export MONGO_DATA_DIR="$USB_ROOT/bestflats_data/mongo"
+        echo "💾 Using USB Disk for storage and temporary build files."
+    fi
+else
+    echo "💻 PC/Server ($ARCH) detected. Using local storage."
+    export MONGO_DATA_DIR="./data/mongo"
+    mkdir -p "$MONGO_DATA_DIR"
 fi
 
 # 1. Check for Prerequisites
