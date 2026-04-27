@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Apartment from '../models/Apartment.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
 import { geocodeAddress } from '../lib/geocoder.js';
@@ -27,14 +28,11 @@ router.get('/:id', async (req, res) => {
     
     if (mongoose.Types.ObjectId.isValid(id)) {
         apt = await Apartment.findById(id);
-    } else {
-        // Support searching by name or a custom slug field if we add one, 
-        // for now we'll match by a case-insensitive name part or exact match
-        apt = await Apartment.findOne({ 
-            $or: [
-                { name: { $regex: new RegExp(id.replace(/-/g, ' '), 'i') } }
-            ] 
-        });
+    } 
+    
+    // If not found by ID or not a valid ID, try finding by slug
+    if (!apt) {
+        apt = await Apartment.findOne({ slug: id });
     }
 
     if (!apt) return res.status(404).json({ error: 'Residence not found in database' });

@@ -11,6 +11,7 @@ const router = express.Router();
 const apartments = [
   {
     name: 'Comfortable and Convenient Stay in the Heart of Suresnes',
+    slug: 'suresnes-modern-stay',
     smallDescription: 'Modern one-bedroom apartment just outside Paris',
     description: `Located in the charming town of Suresnes, just outside Paris, this modern one-bedroom apartment offers a cozy living space with a comfortable lounge, fully equipped kitchen, and in-unit washing machine.
 Enjoy free Wi-Fi and a private bathroom everything you need for a relaxing stay.
@@ -30,6 +31,7 @@ Prime Location Near Paris the apartment is ideally located close to top Parisian
   },
   {
     name: 'Club Farah Nabeul Bungalow',
+    slug: 'nabeul-beach-bungalow',
     smallDescription: 'Beachside luxury in the heart of Tunisia',
     description: `Discover the vibrant beauty of Nabeul at the Club Farah Bungalow. Located steps from the Mediterranean and just a short walk from the Nabeul City Hall, this residence offers a perfect blend of culture and relaxation.
 The bungalow features traditional Tunisian architecture with modern luxury finishes, a private garden, and direct beach access.
@@ -48,6 +50,7 @@ Experience the famous Nabeul markets and craftsmanship while staying in the city
   },
   {
     name: 'Azure Antibes Flat',
+    slug: 'antibes-azure-flat',
     smallDescription: 'Classic elegance in the heart of the French Riviera',
     description: `A sophisticated residence located in the historic center of Antibes. This flat combines classic French architecture with contemporary luxury.
 Featuring views of the Mediterranean and the Port Vauban, the apartment offers a spacious living room, a marble bathroom, and high-speed fiber internet.

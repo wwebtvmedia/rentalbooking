@@ -57,17 +57,11 @@ echo "🚀 Starting $BRAND_NAME Deployment..."
 cp .env rental-platform/.env
 cp .env rental-platform/frontend/.env
 
-# 3. Pull and Build
-echo "🏗️  Building containers..."
-(cd rental-platform && podman-compose build)
+# 3. Build and Start
+echo "🏗️  Building and starting services..."
+(cd rental-platform && podman-compose build && podman-compose up -d)
 
-# 4. Start the Stack
-echo "🔌 Starting services (Backend, Frontend, MongoDB, MCP Client)..."
-if ! (cd rental-platform && podman-compose up -d); then
-    echo "❌ Failed to start services. This might be due to existing containers with the same names."
-    echo "💡 Try running ./clean.sh first to remove old containers, then try ./start.sh again."
-    exit 1
-fi
+# 4. Final verification steps... (renumbering)
 
 # 5. Wait for Backend and Seed Database
 echo "⏳ Waiting for backend to be ready..."
@@ -77,7 +71,7 @@ until $(curl --output /dev/null --silent --head --fail http://localhost:4000/cal
 done
 
 echo -e "\n🌱 Seeding database with initial apartments..."
-curl -X POST http://localhost:4000/seed/unprotected?force=true
+curl -X GET http://localhost:4000/seed/unprotected?force=true
 
 echo "
 ✨ DEPLOYMENT COMPLETE! ✨

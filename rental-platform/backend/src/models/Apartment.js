@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const ApartmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  slug: { type: String, unique: true, sparse: true },
   description: { type: String, default: '' },
   smallDescription: { type: String, default: '' },
   address: { type: String, default: '' },
