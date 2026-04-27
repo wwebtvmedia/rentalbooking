@@ -60,6 +60,11 @@ if grep -q "MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value" .env; then
     sed -i "s|MASTER_ENCRYPTION_KEY=.*|MASTER_ENCRYPTION_KEY=$M_KEY|" .env
 fi
 
+# Ensure .env is available in subdirectories for building
+cp .env rental-platform/.env
+cp .env rental-platform/frontend/.env
+cp .env rental-platform/backend/.env
+
 # 2. Cleanup and Build
 echo "🧹 Cleaning up existing containers..."
 ./clean.sh > /dev/null 2>&1 || true
