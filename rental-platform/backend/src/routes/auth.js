@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../logger.js';
 import { authMiddleware, createToken } from '../auth/index.js';
 import User from '../models/User.js';
 import { v4 as uuidv4 } from 'uuid';
