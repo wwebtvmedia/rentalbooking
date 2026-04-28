@@ -5,7 +5,6 @@ import helmet from "helmet";
 import path from 'path';
 import { rateLimit } from "express-rate-limit";
 import { logger } from "./logger.js";
-import customerRoutes from "./routes/customers.js";
 import bookingRoutes from "./routes/bookings.js";
 import availabilityRoutes from "./routes/availabilities.js";
 import calendarRoutes from "./routes/calendar.js";
@@ -113,7 +112,6 @@ const connectWithRetry = () => {
 
 connectWithRetry();
 
-app.use("/customers", customerRoutes);
 app.use("/bookings", bookingRoutes);
 app.use("/availabilities", availabilityRoutes);
 app.use("/calendar", calendarRoutes);

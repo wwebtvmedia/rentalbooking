@@ -124,13 +124,15 @@ Use `Authorization: Bearer <token>` header for admin-only requests.
 
 The platform implements enterprise-grade security and monitoring:
 
-### Anti-Abuse Protection
-- **Mailer Rate-Limiting:** The magic link system automatically blocks "mail bombing". If an email address requests more than **3 links within 15 minutes**, further requests are rejected to protect SMTP reputation.
-- **Forensic IDs:** Every critical request (Auth, Mailer, MCP Agent) generates a unique `forensicId`. This ID is injected into all related log entries, allowing security teams to trace a specific request lifecycle from initiation to database mutation.
+### At-Rest Data Protection (Zero-Knowledge Architecture)
+- **PII Encryption:** All Personally Identifiable Information (Names, Emails) in Bookings and User profiles is encrypted using AES-256-GCM.
+- **Protected User Keys:** Each user has a unique encryption key, which is itself encrypted with a global `MASTER_ENCRYPTION_KEY` before being stored in the database.
+- **Blind Indexing:** Searching for sensitive fields (like email) is performed using deterministic HMAC-SHA256 blind indexes, ensuring that the database never contains searchable plain-text PII.
 
-### Model Context Protocol (MCP) Security
-- **Tunnel Authentication:** The MCP agent endpoints (`/mcp`) are protected. Only authenticated sessions (internal JWT or verified Google OIDC) can access the agent tunnel.
-- **Audit Logging:** Every agentic tool call (e.g., `create_customer`, `create_apartment`) is logged with full forensic metadata for audit trails.
+### Anti-Abuse & RBAC
+- **Hardened RBAC:** Strict Role-Based Access Control ensures that only authorized profiles (Guest, Host, Concierge, Admin) can access specific resources.
+- **Mailer Rate-Limiting:** The magic link system automatically blocks "mail bombing" and rate-limits requests to protect SMTP reputation.
+- **Forensic IDs:** Every critical request generates a unique `forensicId` for end-to-end auditability.
 
 ### Forensic Log Example
 ```json

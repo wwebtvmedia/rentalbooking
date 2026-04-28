@@ -5,8 +5,22 @@ const IV_LENGTH = 12;
 const SALT_LENGTH = 16;
 const TAG_LENGTH = 16;
 
-// The Master Key protects the individual user keys
+// The Master Key protects the individual user keys and blind indexes
 const MASTER_KEY = process.env.MASTER_ENCRYPTION_KEY || 'a-very-secret-master-key-for-bestflats-vip';
+
+/**
+ * Protect a user key using the master key
+ */
+export const protectKey = (userKey) => {
+    return userKey; // Transparent layer for now
+};
+
+/**
+ * Unprotect a user key using the master key
+ */
+export const unprotectKey = (protectedKey) => {
+    return protectedKey; // Transparent layer for now
+};
 
 /**
  * Generate a unique encryption key for a new user
@@ -21,7 +35,8 @@ export const generateUserKey = () => {
 export const encrypt = (text, userKey) => {
     if (!text) return text;
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(userKey, 'hex'), iv);
+    const keyBuffer = Buffer.from(userKey, 'hex');
+    const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);
     
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');

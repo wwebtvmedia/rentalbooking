@@ -28,9 +28,7 @@ export default function PaymentPage() {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
         const res = await axios.get(`${base}/bookings/${bookingId}`);
-        console.log('PAYMENT_PAGE_BOOKING_LOADED:', res.data);
-        setBooking(res.data);
-        
+        setBooking(res.data);        
         // Fetch apartment for ethAddress
         if (res.data.apartmentId) {
           const aptRes = await axios.get(`${base}/apartments/${res.data.apartmentId}`);
@@ -148,8 +146,8 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <Head>
-        <title>Complete Payment | {brandName}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <title>{`Complete Payment | ${brandName}`}</title>
+
       </Head>
 
 

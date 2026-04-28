@@ -13,10 +13,9 @@ export default function PlatformDashboard() {
     try {
       setLoading(true);
       const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      const adminKey = process.env.NEXT_PUBLIC_PLATFORM_ADMIN_KEY;
+      const token = localStorage.getItem('token');
       
-      const headers: any = { };
-      if (adminKey) headers['X-Platform-Admin-Key'] = adminKey;
+      const headers: any = { Authorization: `Bearer ${token}` };
 
       const [statsRes, custRes] = await Promise.all([
         axios.get(`${base}/admin/platform/stats`, { headers, withCredentials: true }),
@@ -25,7 +24,7 @@ export default function PlatformDashboard() {
       setStats(statsRes.data);
       setCustomers(custRes.data);
     } catch (err: any) {
-      setError('A valid Admin Certificate is required to access this dashboard.');
+      setError('A valid Admin Session is required to access this dashboard.');
     } finally {
       setLoading(false);
     }
@@ -35,9 +34,7 @@ export default function PlatformDashboard() {
     if (!window.confirm('Are you sure you want to remove this member?')) return;
     try {
       const base = process.env.NEXT_PUBLIC_BACKEND_URL;
-      const adminKey = process.env.NEXT_PUBLIC_PLATFORM_ADMIN_KEY;
       const headers: any = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-      if (adminKey) headers['X-Platform-Admin-Key'] = adminKey;
 
       await axios.delete(`${base}/admin/platform/users/${id}`, { headers });
       setCustomers(customers.filter(c => c._id !== id));

@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
-  email: { type: String, required: true },
+  fullName: { type: String, required: true }, // Encrypted
+  email: { type: String, required: true },    // Encrypted
+  emailHash: { type: String, index: true },   // Blind Index for searching
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   apartmentId: { type: String },
   start: { type: Date, required: true },
   end: { type: Date, required: true },

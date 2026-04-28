@@ -28,7 +28,7 @@ export default function MagicCallback() {
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-6">
       <Head>
         <title>Verifying... - bestflats.vip</title>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
       </Head>
       
       <div className="text-center">

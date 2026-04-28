@@ -26,8 +26,7 @@ export async function verifyGoogleToken(token) {
             email: payload['email'],
             name: payload['name'],
             // By default, Google-verified identities are guests 
-            // unless we map them specifically
-            roles: ['guest', 'verified_agent'] 
+            roles: ['guest'] 
         };
     } catch (error) {
         logger.warn({ error: error.message }, "Google Token verification failed");

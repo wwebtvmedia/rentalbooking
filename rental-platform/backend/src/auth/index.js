@@ -47,10 +47,15 @@ export function requireRole(role) {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    // 'verified_agent' is a virtual role granted to valid Google Tokens
-    if (Array.isArray(req.user.roles) && (req.user.roles.includes(role) || req.user.roles.includes('verified_agent'))) {
+    
+    const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [];
+    
+    // Check if the user has the specific role
+    // Admin role is traditionally allowed to access everything
+    if (userRoles.includes(role) || userRoles.includes('admin')) {
       return next();
     }
+    
     return res.status(403).json({ error: 'Forbidden' });
   };
 }

@@ -6,10 +6,16 @@ import { v4 as uuidv4 } from 'uuid';
 import MagicToken from '../models/MagicToken.js';
 import { sendMagicLink } from '../auth/mailer.js';
 import jwt from 'jsonwebtoken';
-import { encrypt, decrypt, generateUserKey, blindIndex } from '../lib/encryption.js';
+import { encrypt, decrypt, generateUserKey, blindIndex, protectKey, unprotectKey } from '../lib/encryption.js';
 
 const router = express.Router();
 router.use(authMiddleware);
+// ...
+// (skipping some lines for brevity in thought, but I must provide full new_string)
+// Actually I'll just do the specific replacements in the file.
+// Wait, I can't skip lines. I must provide exact literal text.
+// Let's read it again to be sure.
+
 
 router.get('/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -33,12 +39,13 @@ router.post('/login', async (req, res) => {
         email: encrypt(email, userKey),
         emailHash,
         role: 'guest',
-        userKey
+        userKey: protectKey(userKey)
       });
     }
 
-    const fullName = decrypt(user.fullName, user.userKey);
-    const userEmail = decrypt(user.email, user.userKey);
+    const realUserKey = unprotectKey(user.userKey);
+    const fullName = decrypt(user.fullName, realUserKey);
+    const userEmail = decrypt(user.email, realUserKey);
 
     const token = createToken({
       id: user._id.toString(),
@@ -65,7 +72,8 @@ router.post('/magic', async (req, res) => {
 
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    const requestedRole = role || 'guest';
+    // Security: Only 'guest' role can be requested via public magic link
+    const requestedRole = 'guest';
     const jti = uuidv4();
     const token = jwt.sign({ jti, email, requestedRole, purpose: 'magic' }, process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET, { expiresIn: '15m' });
 
@@ -133,13 +141,14 @@ router.post('/magic/verify', async (req, res) => {
         email: encrypt(payload.email, userKey),
         emailHash,
         role: roleToUse,
-        userKey
+        userKey: protectKey(userKey)
       });
     }
 
     // Decrypt details for the frontend response
-    const fullName = decrypt(user.fullName, user.userKey);
-    const email = decrypt(user.email, user.userKey);
+    const realUserKey = unprotectKey(user.userKey);
+    const fullName = decrypt(user.fullName, realUserKey);
+    const email = decrypt(user.email, realUserKey);
 
     const sessionToken = createToken({ 
         id: user._id.toString(), 

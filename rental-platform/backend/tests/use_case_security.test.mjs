@@ -92,16 +92,16 @@ describe('Comprehensive Use-Case & Security Tests', () => {
     it('SEC-6: should ensure customer registration is idempotent and doesnt leak data', async () => {
         const email = 'unique@test.com';
         // First creation
-        const res1 = await request.post('/customers').send({ fullName: 'Original', email });
-        expect(res1.status).toBe(201);
-        const id1 = res1.body._id;
+        const res1 = await request.post('/auth/login').send({ name: 'Original', email });
+        expect(res1.status).toBe(200);
+        const id1 = res1.body.user.id;
 
         // Second creation with same email
-        const res2 = await request.post('/customers').send({ fullName: 'Imposter', email });
+        const res2 = await request.post('/auth/login').send({ name: 'Imposter', email });
         expect(res2.status).toBe(200); // Should return 200 (existing)
-        expect(res2.body._id).toBe(id1);
-        // Ensure name wasn't updated to 'Imposter' if the route doesn't support it
-        expect(res2.body.fullName).toBe('Original');
+        expect(res2.body.user.id).toBe(id1);
+        // Ensure name wasn't updated to 'Imposter'
+        expect(res2.body.user.fullName).toBe('Original');
     });
   });
 });

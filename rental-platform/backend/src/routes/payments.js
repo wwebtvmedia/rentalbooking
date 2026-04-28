@@ -1,7 +1,7 @@
 import express from 'express';
 import Booking from '../models/Booking.js';
 import Apartment from '../models/Apartment.js';
-import { requireRole } from '../auth/index.js';
+import { requireRole, authMiddleware } from '../auth/index.js';
 
 let stripe;
 try {
@@ -14,6 +14,7 @@ try {
 }
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // Create a PaymentIntent for the booking deposit (capture_method=manual so we can capture later)
 router.post('/create-intent', async (req, res) => {
@@ -143,6 +144,11 @@ router.post('/record-crypto-payment', async (req, res) => {
     
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    // Security: Only the owner of the booking (matched by email) or an admin can record a payment
+    if (!req.user || (req.user.email !== booking.email && !req.user.roles.includes('admin'))) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this booking' });
+    }
     
     booking.cryptoTxHash = txHash;
     booking.paymentCurrency = currency || 'USDC';

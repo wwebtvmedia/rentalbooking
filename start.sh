@@ -71,7 +71,9 @@ until $(curl --output /dev/null --silent --head --fail http://localhost:4000/cal
 done
 
 echo -e "\n🌱 Seeding database with initial apartments..."
-curl -X GET http://localhost:4000/seed/unprotected?force=true
+# Load admin key from .env
+ADMIN_KEY=$(grep PLATFORM_ADMIN_KEY .env | cut -d '=' -f2)
+curl -X GET -H "x-platform-admin-key: $ADMIN_KEY" "http://localhost:4000/seed/unprotected?force=true"
 
 echo "
 ✨ DEPLOYMENT COMPLETE! ✨

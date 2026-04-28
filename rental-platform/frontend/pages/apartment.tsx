@@ -37,8 +37,8 @@ export default function ApartmentPage() {
   return (
     <div className="fade-in-up">
       <Head>
-        <title>{apartment.name} | {brandName}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <title>{`${apartment.name} | ${brandName}`}</title>
+
       </Head>
 
       <header className="site-header">

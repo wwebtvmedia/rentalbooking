@@ -3,6 +3,8 @@ import Booking from "../models/Booking.js";
 import Availability from "../models/Availability.js";
 import { authMiddleware, requireRole } from "../auth/index.js";
 import { validate, bookingSchema } from "../lib/validation.js";
+import { encrypt, decrypt, blindIndex, unprotectKey } from "../lib/encryption.js";
+import User from "../models/User.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -16,10 +18,40 @@ function overlapsQuery(start, end) {
 // List bookings
 router.get("/", async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Token required' });
-  const q = {};
-  if (req.query.apartmentId) q.apartmentId = req.query.apartmentId;
-  const bookings = await Booking.find(q).sort({ start: 1 }).limit(500);
-  res.json(bookings);
+  try {
+    const q = {};
+    if (req.query.apartmentId) q.apartmentId = req.query.apartmentId;
+    const bookings = await Booking.find(q).sort({ start: 1 }).limit(500);
+    
+    // Decrypt bookings if user has access
+    const decryptedBookings = await Promise.all(bookings.map(async (b) => {
+      // For each booking, we need the owner's userKey to decrypt
+      // Or if it's the current user's booking, we can use their key if we fetch it
+      const owner = await User.findById(b.userId || req.user.id);
+      if (!owner) return b.toObject(); // Fallback to raw if owner not found
+      
+      const isOwner = req.user.id === (b.userId?.toString() || owner._id.toString());
+      const isAdmin = req.user.roles.includes('admin');
+      
+      if (isOwner || isAdmin) {
+        return {
+          ...b.toObject(),
+          fullName: decrypt(b.fullName, owner.userKey),
+          email: decrypt(b.email, owner.userKey)
+        };
+      }
+      // If not owner/admin, return masked/encrypted data
+      return {
+        ...b.toObject(),
+        fullName: 'Private Residence',
+        email: '***@***.***'
+      };
+    }));
+    
+    res.json(decryptedBookings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET /bookings/:id
@@ -28,6 +60,19 @@ router.get('/:id', async (req, res) => {
   try {
     const b = await Booking.findById(req.params.id);
     if (!b) return res.status(404).json({ error: 'Not found' });
+    
+    const owner = await User.findById(b.userId || req.user.id);
+    const isOwner = req.user.id === (b.userId?.toString() || owner?._id.toString());
+    const isAdmin = req.user.roles.includes('admin');
+    
+    if (owner && (isOwner || isAdmin)) {
+      return res.json({
+        ...b.toObject(),
+        fullName: decrypt(b.fullName, owner.userKey),
+        email: decrypt(b.email, owner.userKey)
+      });
+    }
+    
     res.json(b);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -37,6 +82,10 @@ router.get('/:id', async (req, res) => {
 // Create booking (checks conflicts and creates blocking availability)
 router.post("/", validate(bookingSchema), async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Token required to book a residence' });
+  
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
   const session = await mongoose.startSession();
   try {
     let booking;
@@ -54,31 +103,39 @@ router.post("/", validate(bookingSchema), async (req, res) => {
       // Build apartment-specific query if provided
       const aptFilter = apartmentId ? { apartmentId } : {};
 
-      // Check overlap with existing bookings for the same apartment (or globally if not specified)
+      // Check overlap
       const conflictBooking = await Booking.findOne({
         ...overlapsQuery(s, e),
         status: "confirmed",
         ...aptFilter
       }).session(session);
-      if (conflictBooking) {
-        throw new Error("CONFLICT");
-      }
+      if (conflictBooking) throw new Error("CONFLICT");
 
-      // Check blocked availability conflicts
       const conflictAvail = await Availability.findOne({
         ...overlapsQuery(s, e),
         type: "blocked",
         ...aptFilter
       }).session(session);
-      if (conflictAvail) {
-        throw new Error("CONFLICT");
-      }
+      if (conflictAvail) throw new Error("CONFLICT");
+
+      // Encrypt PII
+      const encryptedName = encrypt(fullName, user.userKey);
+      const encryptedEmail = encrypt(email, user.userKey);
+      const emailHash = blindIndex(email);
 
       // Create booking within the transaction
-      const created = await Booking.create([{ fullName, email, apartmentId, start: s, end: e }], { session });
+      const created = await Booking.create([{ 
+        fullName: encryptedName, 
+        email: encryptedEmail, 
+        emailHash,
+        userId: user._id,
+        apartmentId, 
+        start: s, 
+        end: e 
+      }], { session });
       booking = created[0];
 
-      // Determine deposit amount
+      // ... existing deposit logic ...
       let depositAmount = 0;
       if (apartmentId && mongoose.Types.ObjectId.isValid(apartmentId)) {
         const Apartment = (await import('../models/Apartment.js')).default;
@@ -91,11 +148,16 @@ router.post("/", validate(bookingSchema), async (req, res) => {
       booking.paymentStatus = depositAmount > 0 ? 'requires_payment_method' : 'none';
       await booking.save({ session });
 
-      // create a blocking availability tied to this booking
       await Availability.create([{ start: s, end: e, type: "blocked", bookingId: booking._id, apartmentId, note: "Booked" }], { session });
     });
 
-    return res.status(201).json(booking);
+    // Return decrypted for the creator
+    const response = booking.toObject();
+    const userKey = unprotectKey(user.userKey);
+    response.fullName = decrypt(booking.fullName, userKey);
+    response.email = decrypt(booking.email, userKey);
+
+    return res.status(201).json(response);
   } catch (err) {
     console.error('Booking creation error:', err);
     if (err.message === "CONFLICT") {
@@ -121,7 +183,7 @@ router.post('/:id/cancel', async (req, res) => {
 
     const user = req.user;
     const isAdmin = user && Array.isArray(user.roles) && user.roles.includes('admin');
-    const isOwner = user && user.email && user.email === booking.email;
+    const isOwner = user && user.email && blindIndex(user.email) === booking.emailHash;
     if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Forbidden' });
 
     booking.status = 'cancelled';
@@ -135,3 +197,5 @@ router.post('/:id/cancel', async (req, res) => {
 });
 
 export default router;
+
+;

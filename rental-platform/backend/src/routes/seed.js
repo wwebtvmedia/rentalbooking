@@ -121,9 +121,14 @@ router.post('/', requireRole('admin'), async (req, res) => {
   }
 });
 
-// Unprotected seed endpoint for deployment scripts
+// Protected seed endpoint for deployment scripts
 router.get('/unprotected', async (req, res) => {
-  // Bypasses authMiddleware check
+  // Security Layer: Check for Platform Admin Key
+  const adminKey = req.headers['x-platform-admin-key'];
+  if (adminKey !== process.env.PLATFORM_ADMIN_KEY) {
+      return res.status(403).json({ error: 'Invalid Platform Admin Key' });
+  }
+
   try {
     await seedMedia();
     const count = await Apartment.countDocuments();

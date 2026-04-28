@@ -30,12 +30,8 @@ export default function Home() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        console.log('DEBUG: Fetching from', `${API_BASE_URL}/apartments`);
         const res = await axios.get(`${API_BASE_URL}/apartments`);
-        console.log('DEBUG: Apartments found:', res.data.length);
-        setApartments(res.data);
-      } catch (err: any) {
-        console.error('DEBUG: API Fetch Error:', err.message);
+        setApartments(res.data);      } catch (err: any) {
         setApartments([]);
       } finally {
         setLoading(false);
@@ -106,7 +102,7 @@ export default function Home() {
   return (
     <div className="fade-in-up">
       <Head>
-        <title>{brandName} | Excellence in Living</title>
+        <title>{`${brandName} | Excellence in Living`}</title>
       </Head>
 
       <header className="site-header">

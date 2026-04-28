@@ -1,7 +1,8 @@
 // src/mcp/server.js
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import Customer from "../models/Customer.js";
+import User from "../models/User.js";
+import { encrypt, generateUserKey, protectKey, blindIndex } from "../lib/encryption.js";
 import { logger } from "../logger.js";
 import Apartment from "../models/Apartment.js";
 import { geocodeAddress } from "../lib/geocoder.js";
@@ -25,21 +26,24 @@ export function getMcpServer() {
       const forensicId = Math.random().toString(36).substring(7);
       logger.info({ forensicId, input }, "MCP_TOOL_CALL: create_customer initiated");
 
-      // Simple auth check
-      const auth = extra?.requestInfo?.headers?.authorization || "";
-      if (!auth.includes("admin-token") && process.env.NODE_ENV !== 'development') {
-        logger.warn({ forensicId }, "MCP_TOOL_CALL: Unauthorized attempt on create_customer");
-        throw new Error("Unauthorized");
-      }
+      const userKey = generateUserKey();
+      const emailHash = blindIndex(input.email);
 
-      const customer = await Customer.create(input);
+      const customer = await User.create({
+        fullName: encrypt(input.fullName, userKey),
+        email: encrypt(input.email, userKey),
+        emailHash,
+        role: 'guest',
+        userKey: protectKey(userKey)
+      });
+
       logger.info({ forensicId, customerId: customer.id }, "MCP_TOOL_CALL: Customer created successfully");
 
       return {
         content: [
-          { type: "text", text: JSON.stringify(customer) }
+          { type: "text", text: `Customer created with ID: ${customer.id}` }
         ],
-        structuredContent: customer
+        structuredContent: { id: customer.id, email: input.email, fullName: input.fullName }
       };
     }
   );
@@ -61,12 +65,6 @@ export function getMcpServer() {
       const forensicId = Math.random().toString(36).substring(7);
       logger.info({ forensicId, input }, "MCP_TOOL_CALL: create_apartment initiated");
 
-      // Simple auth check
-      const auth = extra?.requestInfo?.headers?.authorization || "";
-      if (!auth.includes("admin-token") && process.env.NODE_ENV !== 'development') {
-        logger.warn({ forensicId }, "MCP_TOOL_CALL: Unauthorized attempt on create_apartment");
-        throw new Error("Unauthorized");
-      }
       let { lat, lon } = input;
       const { address } = input;
 

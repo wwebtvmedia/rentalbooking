@@ -9,12 +9,6 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/stats', requireRole('admin'), async (req, res) => {
-  // Secondary Security Layer: Check for Platform Admin Key
-  const adminKey = req.headers['x-platform-admin-key'];
-  if (process.env.NODE_ENV === 'production' && adminKey !== process.env.PLATFORM_ADMIN_KEY) {
-      return res.status(403).json({ error: 'Invalid Platform Admin Key' });
-  }
-
   try {
     const flatCount = await Apartment.countDocuments();
     const totalBookings = await Booking.countDocuments();
@@ -81,12 +75,15 @@ router.get('/customers', requireRole('admin'), async (req, res) => {
   try {
     // Only return recent members with DECRYPTED names for the admin dashboard
     const users = await User.find({ role: 'guest' }).sort({ createdAt: -1 }).limit(50);
-    const decryptedUsers = users.map(u => ({
-        _id: u._id,
-        fullName: decrypt(u.fullName, u.userKey),
-        email: decrypt(u.email, u.userKey),
-        createdAt: u.createdAt
-    }));
+    const decryptedUsers = users.map(u => {
+        const userKey = unprotectKey(u.userKey);
+        return {
+            _id: u._id,
+            fullName: decrypt(u.fullName, userKey),
+            email: decrypt(u.email, userKey),
+            createdAt: u.createdAt
+        };
+    });
     res.json(decryptedUsers);
   } catch (err) {
     res.status(500).json({ error: err.message });

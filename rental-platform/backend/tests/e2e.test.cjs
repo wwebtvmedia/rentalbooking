@@ -32,7 +32,10 @@ beforeAll(async () => {
   process.env.PORT = '5001';
 
   // start server as a child process so we avoid importing ESM module into CJS test runner
-  const env = { ...process.env };
+  const env = { 
+    ...process.env,
+    MASTER_ENCRYPTION_KEY: process.env.MASTER_ENCRYPTION_KEY || 'test-master-key-12345678901234567890'
+  };
   serverProcess = spawn('node', ['src/index.js'], { env });
 
   // capture output
@@ -97,14 +100,11 @@ describe('E2E non-regression tests', () => {
   let bobToken, bobId, bookingId, availId;
 
   test('create guest and login returns token', async () => {
-    const create = await request.post('/customers').send({ fullName: 'Bob Tester', email: 'bob@e2e.test' });
-    expect([200,201]).toContain(create.status);
-    bobId = create.body._id;
-
-    // test traditional login
-    const login = await request.post('/auth/login').send({ email: 'bob@e2e.test' }).expect(200);
+    // test traditional login (creates user if missing)
+    const login = await request.post('/auth/login').send({ email: 'bob@e2e.test', name: 'Bob Tester' }).expect(200);
     expect(login.body.token).toBeTruthy();
     bobToken = login.body.token;
+    bobId = login.body.user.id;
 
     // test magic link request/verify (test env returns token)
     const magicReq = await request.post('/auth/magic').send({ email: 'bob@e2e.test', redirectUrl: 'http://localhost:5001/magic-callback' }).expect(200);
