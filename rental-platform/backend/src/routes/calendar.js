@@ -35,7 +35,7 @@ router.get("/events", async (req, res) => {
         start: b.start,
         end: b.end,
         allDay: false,
-        extendedProps: { type: "booking", apartment: publicApartment(apt) }
+        extendedProps: { type: "booking", bookingId: b._id, apartment: publicApartment(apt) }
       });
     }
 
@@ -50,7 +50,7 @@ router.get("/events", async (req, res) => {
         allDay: false,
         backgroundColor: a.type === 'blocked' ? '#666' : '#2ecc71',
         borderColor: a.type === 'blocked' ? '#444' : '#27ae60',
-        extendedProps: { type: 'availability', availType: a.type, apartment: publicApartment(apt) }
+        extendedProps: { type: 'availability', availType: a.type, bookingId: a.bookingId, apartment: publicApartment(apt) }
       });
     }
 

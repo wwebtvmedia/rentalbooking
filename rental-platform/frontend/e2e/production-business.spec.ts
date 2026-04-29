@@ -3,12 +3,12 @@ import { test, expect } from '@playwright/test';
 test.describe('Production Business Flow', () => {
 
   test.beforeEach(async ({ page }) => {
-    page.on('console', msg => console.log('LIVE BROWSER:', msg.text()));
-    page.on('pageerror', err => console.log('LIVE ERROR:', err.message));
+    page.on('console', msg => console.log('BROWSER:', msg.text()));
+    page.on('pageerror', err => console.log('ERROR:', err.message));
   });
   
   test('should require login to see residences and access calendar', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
     
     // 1. Initial state: Residences should be hidden/fallback due to 401
     // (Our debug log should show 401 in the re-run)
@@ -33,12 +33,12 @@ test.describe('Production Business Flow', () => {
     
     // Check if the apartments link eventually appears after login
     // In this test, we verify the PUBLIC admin page as a connectivity check
-    await page.goto('https://www.bestflats.vip/admin');
+    await page.goto('/admin');
     await expect(page.locator('.brand-text')).toContainText('bestflats.vip Admin');
   });
 
   test('admin page should be reachable', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip/admin');
+    await page.goto('/admin');
     await expect(page).toHaveTitle(/Admin Dashboard/i);
     await expect(page.locator('.brand-text')).toContainText('bestflats.vip Admin');
   });

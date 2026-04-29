@@ -97,7 +97,14 @@ afterAll(async () => {
 });
 
 describe('E2E non-regression tests', () => {
-  let bobToken, bobId, bookingId, availId;
+  let bobToken, bobId, bookingId, availId, aptE2EId, aptOtherId;
+
+  test('setup test apartments', async () => {
+    const res1 = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Apt E2E', pricePerNight: 100 }).expect(201);
+    aptE2EId = res1.body._id;
+    const res2 = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Apt Other', pricePerNight: 100 }).expect(201);
+    aptOtherId = res2.body._id;
+  });
 
   test('create guest and login returns token', async () => {
     // test traditional login (creates user if missing)
@@ -121,12 +128,12 @@ describe('E2E non-regression tests', () => {
   test('create booking for apartment', async () => {
     const start = new Date(Date.now() + 24*3600*1000).toISOString();
     const end = new Date(Date.now() + 26*3600*1000).toISOString();
-    const res = await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: 'apt-e2e', start, end }).expect(201);
+    const res = await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: aptE2EId, start, end }).expect(201);
     expect(res.body._id).toBeTruthy();
     bookingId = res.body._id;
 
     // confirm event appears in calendar
-    const cal = await request.get(`/calendar/events?apartmentId=apt-e2e`).expect(200);
+    const cal = await request.get(`/calendar/events?apartmentId=${aptE2EId}`).expect(200);
     const hasBooking = cal.body.some(e => e.extendedProps?.bookingId === bookingId);
     expect(hasBooking).toBe(true);
   });
@@ -134,7 +141,7 @@ describe('E2E non-regression tests', () => {
   test('overlapping booking should return 409', async () => {
     const start = new Date(Date.now() + 24*3600*1000).toISOString();
     const end = new Date(Date.now() + 26*3600*1000).toISOString();
-    await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: 'apt-e2e', start, end }).expect(409);
+    await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: aptE2EId, start, end }).expect(409);
   });
 
   test('cancel booking by non-owner is forbidden', async () => {
@@ -152,7 +159,7 @@ describe('E2E non-regression tests', () => {
   test('admin can create and delete availability', async () => {
     const start = new Date(Date.now() + 48*3600*1000).toISOString();
     const end = new Date(Date.now() + 52*3600*1000).toISOString();
-    const res = await request.post('/availabilities').set('Authorization', `Bearer ${adminToken}`).send({ start, end, type: 'blocked', note: 'test block', apartmentId: 'apt-e2e' }).expect(201);
+    const res = await request.post('/availabilities').set('Authorization', `Bearer ${adminToken}`).send({ start, end, type: 'blocked', note: 'test block', apartmentId: aptE2EId }).expect(201);
     expect(res.body._id).toBeTruthy();
     availId = res.body._id;
 
@@ -165,7 +172,7 @@ describe('E2E non-regression tests', () => {
     // first upload a small image
     const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
     // If multer not installed, the uploads endpoint accepts JSON fallback { filename, b64 }
-    const up = await request.post('/uploads').send({ filename: 'photo.png', b64: pngB64 }).expect(200);
+    const up = await request.post('/uploads').set('Authorization', `Bearer ${adminToken}`).send({ filename: 'photo.png', b64: pngB64 }).expect(200);
     expect(up.body.url).toBeTruthy();
 
     const payload = { name: 'E2E Apartment', description: 'Test apartment', photos: [up.body.url], pricePerNight: 120, rules: 'No smoking', lat: 51.5, lon: -0.1 };
@@ -180,9 +187,9 @@ describe('E2E non-regression tests', () => {
     // create a booking for other apartment
     const start = new Date(Date.now() + 72*3600*1000).toISOString();
     const end = new Date(Date.now() + 73*3600*1000).toISOString();
-    const res = await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: 'apt-other', start, end }).expect(201);
-    const calA = await request.get('/calendar/events?apartmentId=apt-e2e').expect(200);
-    const calB = await request.get('/calendar/events?apartmentId=apt-other').expect(200);
+    const res = await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`).send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: aptOtherId, start, end }).expect(201);
+    const calA = await request.get(`/calendar/events?apartmentId=${aptE2EId}`).expect(200);
+    const calB = await request.get(`/calendar/events?apartmentId=${aptOtherId}`).expect(200);
     const inA = calA.body.some(e => e.extendedProps?.bookingId === res.body._id);
     const inB = calB.body.some(e => e.extendedProps?.bookingId === res.body._id);
     expect(inA).toBe(false);
@@ -287,7 +294,7 @@ describe('E2E non-regression tests', () => {
 
   test('payments create-intent stub works for booking with deposit', async () => {
     // create an apartment with a fixed deposit ($75)
-    const up = await request.post('/uploads').send({ filename: 'photo.png', b64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=' }).expect(200);
+    const up = await request.post('/uploads').set('Authorization', `Bearer ${adminToken}`).send({ filename: 'photo.png', b64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=' }).expect(200);
     const payload = { name: 'Deposit Apt', description: 'With deposit', photos: [up.body.url], pricePerNight: 50, depositAmount: 75 };
     const aptRes = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send(payload).expect(201);
     const aptId = aptRes.body._id;

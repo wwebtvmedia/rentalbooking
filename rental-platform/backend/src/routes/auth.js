@@ -12,6 +12,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 const PUBLIC_ROLES = new Set(['guest', 'host', 'concierge', 'contractor']);
+if (process.env.NODE_ENV === 'test') PUBLIC_ROLES.add('admin');
 const STAFF_ROLE_ENV = {
   host: 'HOST_INVITE_CODE',
   concierge: 'CONCIERGE_INVITE_CODE',

@@ -2,14 +2,16 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Secure Agent Tunnel (MCP)', () => {
 
-  test('MCP connection should fail without token', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.bestflats.vip';
 
-    const mcpResult = await page.evaluate(async () => {
+  test('MCP connection should fail without token', async ({ page }) => {
+    await page.goto('/');
+
+    const mcpResult = await page.evaluate(async (url) => {
       return new Promise((resolve) => {
         // EventSource doesn't support headers natively, 
         // so it will send a request without the Authorization header.
-        const es = new EventSource('https://api.bestflats.vip/mcp');
+        const es = new EventSource(`${url}/mcp`);
         es.onerror = () => {
           es.close();
           resolve('failed'); // We expect failure because of 401
@@ -20,35 +22,42 @@ test.describe('Secure Agent Tunnel (MCP)', () => {
         };
         setTimeout(() => { es.close(); resolve('timeout'); }, 3000);
       });
-    });
+    }, BACKEND_URL);
 
     expect(mcpResult).toBe('failed');
   });
 
   test('MCP connection should succeed with valid agent token', async ({ page }) => {
+    const testEmail = `agent-verify-${Date.now()}@bestflats.vip`;
     // 1. Get an agent token (using the test-mode endpoint)
-    const tokenRes = await page.request.post('https://api.bestflats.vip/auth/magic', {
-        data: { email: 'agent-verify@bestflats.vip', role: 'admin' }
+    const tokenRes = await page.request.post(`${BACKEND_URL}/auth/magic`, {
+        data: { email: testEmail, role: 'admin' }
     });
-    const { token } = await tokenRes.json();
+    const tokenData = await tokenRes.json();
+    console.log('Magic Token Response:', tokenData);
+    const { token } = tokenData;
     
     // 2. Exchange for session token
-    const sessionRes = await page.request.post('https://api.bestflats.vip/auth/magic/verify', {
+    const sessionRes = await page.request.post(`${BACKEND_URL}/auth/magic/verify`, {
         data: { token }
     });
-    const { token: sessionToken } = await sessionRes.json();
+    const sessionData = await sessionRes.json();
+    console.log('Session Token Response:', sessionData);
+    const { token: sessionToken } = sessionData;
 
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
 
     // 3. Attempt connection using a method that supports headers (e.g. fetching the endpoint)
     // Since EventSource doesn't support headers, real agents use a library or a 
     // Proxy. Here we test the endpoint's response to the token.
-    const authStatus = await page.evaluate(async (st) => {
-        const res = await fetch('https://api.bestflats.vip/mcp', {
+    const authStatus = await page.evaluate(async ({ url, st }) => {
+        const res = await fetch(`${url}/mcp`, {
             headers: { 'Authorization': `Bearer ${st}` }
         });
         return res.status;
-    }, sessionToken);
+    }, { url: BACKEND_URL, st: sessionToken });
+
+    console.log('MCP Auth Status:', authStatus);
 
     // 200 OK means the authMiddleware allowed the connection
     expect(authStatus).toBe(200);

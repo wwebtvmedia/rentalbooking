@@ -76,9 +76,27 @@ app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
 const PORT = process.env.PORT || 4000;
 
-const connectWithRetry = () => {
+const connectWithRetry = async () => {
+  let uri = process.env.MONGO_URI;
+  if (!uri && process.env.NODE_ENV === 'test') {
+    try {
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      const mongoServer = await MongoMemoryServer.create();
+      uri = mongoServer.getUri();
+      logger.info({ uri }, "Using in-memory MongoDB for testing");
+    } catch (e) {
+      logger.error({ err: e.message }, "Failed to start MongoMemoryServer");
+    }
+  }
+
+  if (!uri) {
+    logger.error("MONGO_URI is not set. Retrying in 5s...");
+    setTimeout(connectWithRetry, 5000);
+    return;
+  }
+
   logger.info("Attempting MongoDB connection...");
-  return mongoose.connect(process.env.MONGO_URI)
+  return mongoose.connect(uri)
     .then(() => logger.info("MongoDB connected successfully"))
     .catch((err) => {
       logger.error({ err: err.message }, "MongoDB connection failed, retrying in 5 seconds...");

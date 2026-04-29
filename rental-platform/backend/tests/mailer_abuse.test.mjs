@@ -18,9 +18,11 @@ jest.unstable_mockModule('nodemailer', () => ({
 
 const { sendMagicLink } = await import('../src/auth/mailer.js');
 const MagicToken = (await import('../src/models/MagicToken.js')).default;
+const { blindIndex } = await import('../src/lib/encryption.js');
 
 describe('Mailer Abuse Protection', () => {
   beforeAll(async () => {
+    process.env.MASTER_ENCRYPTION_KEY = process.env.MASTER_ENCRYPTION_KEY || 'test-master-key-12345678901234567890';
     mongodb = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     process.env.MONGO_URI = mongodb.getUri();
     await mongoose.connect(process.env.MONGO_URI);
@@ -33,13 +35,14 @@ describe('Mailer Abuse Protection', () => {
 
   it('should block mail bombing (more than 3 active tokens)', async () => {
     const email = 'victim@example.com';
+    const hash = blindIndex(email);
     const link = 'http://l/m?token=';
 
     // 1. Create 3 active tokens manually
     await MagicToken.create([
-        { jti: 't1', email, expiresAt: new Date(Date.now() + 900000) },
-        { jti: 't2', email, expiresAt: new Date(Date.now() + 900000) },
-        { jti: 't3', email, expiresAt: new Date(Date.now() + 900000) }
+        { jti: 't1', emailHash: hash, expiresAt: new Date(Date.now() + 900000) },
+        { jti: 't2', emailHash: hash, expiresAt: new Date(Date.now() + 900000) },
+        { jti: 't3', emailHash: hash, expiresAt: new Date(Date.now() + 900000) }
     ]);
 
     // 2. Attempt to send magic link

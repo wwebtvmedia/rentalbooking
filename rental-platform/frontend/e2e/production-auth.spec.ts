@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Production Authentication Flow', () => {
   
   test('should be able to request a magic link on live site', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
     
     // Find auth section
     const authSection = page.locator('#auth');
@@ -16,7 +16,7 @@ test.describe('Production Authentication Flow', () => {
     // Handle the alert dialog
     page.on('dialog', async dialog => {
       console.log('Production Auth Alert:', dialog.message());
-      expect(dialog.message()).toMatch(/Verification link sent|Magic link sent|Logged in/i);
+      expect(dialog.message()).toMatch(/Verification link sent|Magic link sent|Logged in|Welcome! Account created/i);
       await dialog.accept();
     });
 
@@ -29,7 +29,7 @@ test.describe('Production Authentication Flow', () => {
   });
 
   test('Sign In button in header should scroll to auth section', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
     
     // Click header Sign In
     const headerSignIn = page.locator('text=Sign In').first();

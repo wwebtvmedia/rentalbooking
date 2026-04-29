@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Production Inventory Verification', () => {
 
   test('should display all 3 curated properties on the homepage', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
     
     // We expect 3 distinct property titles to eventually load
     const properties = [
@@ -19,7 +19,7 @@ test.describe('Production Inventory Verification', () => {
   });
 
   test('each property should have its specific pricing visible', async ({ page }) => {
-    await page.goto('https://www.bestflats.vip');
+    await page.goto('/');
     
     // Check Antibes Price
     await expect(page.locator('text=$180')).toBeVisible();
