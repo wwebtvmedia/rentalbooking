@@ -13,6 +13,7 @@ export default function Home() {
   const [apartments, setApartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestedRole, setRequestedRole] = useState('guest');
+  const [inviteCode, setInviteCode] = useState('');
 
   const brandName = BRAND_NAME;
   const currentYear = new Date().getFullYear();
@@ -57,6 +58,7 @@ export default function Home() {
         email, 
         fullName, 
         role: requestedRole,
+        inviteCode,
         redirectUrl: window.location.origin + '/magic-callback' 
       });
       if (res.data?.token) {
@@ -78,6 +80,7 @@ export default function Home() {
       const res = await axios.post(`${API_BASE_URL}/auth/magic`, { 
         email, 
         role: requestedRole,
+        inviteCode,
         redirectUrl: window.location.origin + '/magic-callback' 
       });
       if (res.data?.token) {
@@ -278,6 +281,15 @@ export default function Home() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
+                      {requestedRole !== 'guest' && (
+                        <input
+                          type="password"
+                          placeholder="Staff invite code"
+                          className="input-luxury"
+                          value={inviteCode}
+                          onChange={(e) => setInviteCode(e.target.value)}
+                        />
+                      )}
                     </div>
 
                     <div className="flex flex-row gap-4">

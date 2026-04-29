@@ -54,3 +54,18 @@ coverage/
 
 # Ignore local secrets
 secrets.json
+
+# Certificates and generated private keys
+certs/
+*.p12
+*.pfx
+*.key
+*.pem
+*.crt
+
+# TypeScript incremental cache
+*.tsbuildinfo
+
+# Runtime uploads except seeded demo assets
+rental-platform/backend/uploads/*
+!rental-platform/backend/uploads/appartement/

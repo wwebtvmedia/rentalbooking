@@ -2,10 +2,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+ARG NEXT_PUBLIC_BRAND_NAME=bestflats.vip
+ARG NEXT_PUBLIC_INSTAGRAM_URL=https://www.instagram.com/
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BRAND_NAME=$NEXT_PUBLIC_BRAND_NAME
+ENV NEXT_PUBLIC_INSTAGRAM_URL=$NEXT_PUBLIC_INSTAGRAM_URL
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# copy only the app files we need for build (pages, components, styles, types, etc.)
 COPY tsconfig.json tailwind.config.js postcss.config.js ./
 COPY lib ./lib
 COPY pages ./pages
@@ -13,7 +19,6 @@ COPY components ./components
 COPY styles ./styles
 COPY public ./public
 COPY types ./types
-COPY .env .env
 
 RUN npm run build
 

@@ -1,37 +1,59 @@
 import express from 'express';
 import Booking from '../models/Booking.js';
-import Apartment from '../models/Apartment.js';
-import { requireRole, authMiddleware } from '../auth/index.js';
+import { authMiddleware, requireRole } from '../auth/index.js';
+import { blindIndex } from '../lib/encryption.js';
 
-let stripe;
-try {
-  // Attempt to require stripe; if not installed we will gracefully fall back to a test-mode stub
-  // eslint-disable-next-line import/no-extraneous-dependencies
-  stripe = (await import('stripe')).default(process.env.STRIPE_SECRET_KEY);
-} catch (e) {
-  console.warn('Stripe SDK not available; running payments in stub mode');
-  stripe = null;
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+let stripe = null;
+if (stripeSecret) {
+  try {
+    stripe = (await import('stripe')).default(stripeSecret);
+  } catch {
+    stripe = null;
+  }
 }
 
 const router = express.Router();
 router.use(authMiddleware);
 
-// Create a PaymentIntent for the booking deposit (capture_method=manual so we can capture later)
+function hasRole(req, role) {
+  return Array.isArray(req.user?.roles) && req.user.roles.includes(role);
+}
+
+function isOwnerOrAdmin(req, booking) {
+  if (!req.user) return false;
+  if (hasRole(req, 'admin')) return true;
+  if (booking.userId && booking.userId.toString() === req.user.id) return true;
+  return req.user.email && booking.emailHash && blindIndex(req.user.email) === booking.emailHash;
+}
+
+function validateTxHash(txHash) {
+  return /^0x[a-fA-F0-9]{64}$/.test(String(txHash || ''));
+}
+
 router.post('/create-intent', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const { bookingId } = req.body;
     if (!bookingId) return res.status(400).json({ error: 'bookingId required' });
+
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!isOwnerOrAdmin(req, booking)) return res.status(403).json({ error: 'Forbidden' });
     if (!booking.depositAmount || booking.depositAmount <= 0) return res.status(400).json({ error: 'No deposit required for this booking' });
+    if (booking.paymentStatus === 'succeeded') return res.status(400).json({ error: 'Booking is already paid' });
 
-    // If stripe is available, create a PaymentIntent
     if (stripe) {
+      const existingIntent = booking.paymentIntentId ? await stripe.paymentIntents.retrieve(booking.paymentIntentId).catch(() => null) : null;
+      if (existingIntent && !['canceled', 'succeeded'].includes(existingIntent.status)) {
+        return res.json({ clientSecret: existingIntent.client_secret, paymentIntentId: existingIntent.id });
+      }
+
       const pi = await stripe.paymentIntents.create({
         amount: booking.depositAmount,
         currency: (process.env.STRIPE_CURRENCY || 'usd').toLowerCase(),
         capture_method: 'manual',
-        metadata: { bookingId: String(booking._id) }
+        metadata: { bookingId: String(booking._id), userId: String(booking.userId || '') }
       });
       booking.paymentIntentId = pi.id;
       booking.paymentStatus = pi.status || 'requires_payment_method';
@@ -39,7 +61,10 @@ router.post('/create-intent', async (req, res) => {
       return res.json({ clientSecret: pi.client_secret, paymentIntentId: pi.id });
     }
 
-    // Fallback: stub behavior for environments without stripe (tests/local)
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({ error: 'Stripe is not configured' });
+    }
+
     const fakeId = `pi_stub_${booking._id}`;
     booking.paymentIntentId = fakeId;
     booking.paymentStatus = 'requires_payment_method';
@@ -50,13 +75,20 @@ router.post('/create-intent', async (req, res) => {
   }
 });
 
-// Admin: capture authorized deposit
 router.post('/:bookingId/capture', requireRole('admin'), async (req, res) => {
   try {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(req.params.bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    if (!booking.paymentIntentId) return res.status(400).json({ error: 'No payment intent to capture' });
+    if (!booking.paymentIntentId && !booking.cryptoTxHash) return res.status(400).json({ error: 'No payment to capture' });
+
+    if (booking.cryptoTxHash && !booking.paymentIntentId) {
+      booking.depositCaptured = true;
+      booking.depositCapturedAt = new Date();
+      booking.paymentStatus = 'succeeded';
+      booking.depositHeld = true;
+      await booking.save();
+      return res.json({ ok: true, crypto: true });
+    }
 
     if (stripe) {
       const pi = await stripe.paymentIntents.capture(booking.paymentIntentId);
@@ -67,7 +99,8 @@ router.post('/:bookingId/capture', requireRole('admin'), async (req, res) => {
       return res.json({ ok: true, paymentIntent: pi });
     }
 
-    // stub capture
+    if (process.env.NODE_ENV === 'production') return res.status(503).json({ error: 'Stripe is not configured' });
+
     booking.depositCaptured = true;
     booking.depositCapturedAt = new Date();
     booking.paymentStatus = 'succeeded';
@@ -78,37 +111,44 @@ router.post('/:bookingId/capture', requireRole('admin'), async (req, res) => {
   }
 });
 
-// Admin: refund deposit (if captured) or cancel the PaymentIntent
 router.post('/:bookingId/refund', requireRole('admin'), async (req, res) => {
   try {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(req.params.bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    if (!booking.paymentIntentId) return res.status(400).json({ error: 'No payment intent to refund' });
+    if (!booking.paymentIntentId && !booking.cryptoTxHash) return res.status(400).json({ error: 'No payment to refund/cancel' });
+
+    if (booking.cryptoTxHash && !booking.paymentIntentId) {
+      booking.depositRefundedAt = new Date();
+      booking.depositCaptured = false;
+      booking.depositHeld = false;
+      booking.paymentStatus = 'canceled';
+      await booking.save();
+      return res.json({ ok: true, crypto: true, note: 'Marked as refunded/canceled; verify the crypto refund manually.' });
+    }
 
     if (stripe) {
-      // If there are charges for the PI, refund the first charge. Otherwise cancel the PI.
       const pi = await stripe.paymentIntents.retrieve(booking.paymentIntentId);
-      if (pi.charges && pi.charges.data && pi.charges.data.length > 0) {
-        const chargeId = pi.charges.data[0].id;
-        const refund = await stripe.refunds.create({ charge: chargeId });
+      if (pi.charges?.data?.length > 0) {
+        const refund = await stripe.refunds.create({ charge: pi.charges.data[0].id });
         booking.depositRefundedAt = new Date();
         booking.depositCaptured = false;
+        booking.depositHeld = false;
         booking.paymentStatus = 'canceled';
         await booking.save();
         return res.json({ ok: true, refund });
-      } else {
-        await stripe.paymentIntents.cancel(booking.paymentIntentId);
-        booking.paymentStatus = 'canceled';
-        booking.depositHeld = false;
-        await booking.save();
-        return res.json({ ok: true });
       }
+      await stripe.paymentIntents.cancel(booking.paymentIntentId);
+      booking.paymentStatus = 'canceled';
+      booking.depositHeld = false;
+      await booking.save();
+      return res.json({ ok: true });
     }
 
-    // stub refund
+    if (process.env.NODE_ENV === 'production') return res.status(503).json({ error: 'Stripe is not configured' });
+
     booking.depositRefundedAt = new Date();
     booking.depositCaptured = false;
+    booking.depositHeld = false;
     booking.paymentStatus = 'canceled';
     await booking.save();
     return res.json({ ok: true, stub: true });
@@ -117,16 +157,15 @@ router.post('/:bookingId/refund', requireRole('admin'), async (req, res) => {
   }
 });
 
-// Test/dev helper: simulate a successful payment for the booking
-// ONLY available in non-production environments
 router.post('/:bookingId/simulate-success', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Not available in production' });
-  }
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'Not available in production' });
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
   try {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(req.params.bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!isOwnerOrAdmin(req, booking)) return res.status(403).json({ error: 'Forbidden' });
+
     booking.paymentStatus = 'succeeded';
     booking.depositHeld = true;
     await booking.save();
@@ -136,27 +175,32 @@ router.post('/:bookingId/simulate-success', async (req, res) => {
   }
 });
 
-// Record a crypto payment (USDC)
 router.post('/record-crypto-payment', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const { bookingId, txHash, currency } = req.body;
     if (!bookingId || !txHash) return res.status(400).json({ error: 'bookingId and txHash required' });
-    
+    if (!validateTxHash(txHash)) return res.status(400).json({ error: 'Invalid transaction hash' });
+
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!isOwnerOrAdmin(req, booking)) return res.status(403).json({ error: 'Forbidden' });
+    if (booking.paymentStatus === 'succeeded') return res.status(400).json({ error: 'Booking is already paid' });
 
-    // Security: Only the owner of the booking (matched by email) or an admin can record a payment
-    if (!req.user || (req.user.email !== booking.email && !req.user.roles.includes('admin'))) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this booking' });
-    }
-    
     booking.cryptoTxHash = txHash;
     booking.paymentCurrency = currency || 'USDC';
+
+    if (process.env.NODE_ENV === 'production') {
+      booking.paymentStatus = 'requires_capture';
+      booking.depositHeld = false;
+      await booking.save();
+      return res.json({ ok: true, status: 'pending_manual_verification', message: 'Transaction hash saved. Admin verification is required before marking paid.' });
+    }
+
     booking.paymentStatus = 'succeeded';
     booking.depositHeld = true;
-    
     await booking.save();
-    return res.json({ ok: true, booking });
+    return res.json({ ok: true, status: 'succeeded', booking });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

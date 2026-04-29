@@ -123,9 +123,11 @@ router.post('/', requireRole('admin'), async (req, res) => {
 
 // Protected seed endpoint for deployment scripts
 router.get('/unprotected', async (req, res) => {
-  // Security Layer: Check for Platform Admin Key
+  const expectedKey = process.env.PLATFORM_ADMIN_KEY;
+  if (!expectedKey) return res.status(403).json({ error: 'PLATFORM_ADMIN_KEY is not configured' });
+
   const adminKey = req.headers['x-platform-admin-key'];
-  if (adminKey !== process.env.PLATFORM_ADMIN_KEY) {
+  if (!adminKey || adminKey !== expectedKey) {
       return res.status(403).json({ error: 'Invalid Platform Admin Key' });
   }
 

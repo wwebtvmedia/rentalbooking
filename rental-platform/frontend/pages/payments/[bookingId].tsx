@@ -16,6 +16,12 @@ export default function PaymentPage() {
   const [showCrypto, setShowCrypto] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const authHeaders = () => {
+    if (typeof window === 'undefined') return {};
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
 
   useEffect(() => {
@@ -26,8 +32,8 @@ export default function PaymentPage() {
     if (!bookingId) return;
     (async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
-        const res = await axios.get(`${base}/bookings/${bookingId}`);
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const res = await axios.get(`${base}/bookings/${bookingId}`, { headers: authHeaders() });
         setBooking(res.data);        
         // Fetch apartment for ethAddress
         if (res.data.apartmentId) {
@@ -47,8 +53,8 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
-      const r = await axios.post(`${base}/payments/create-intent`, { bookingId });
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const r = await axios.post(`${base}/payments/create-intent`, { bookingId }, { headers: authHeaders() });
       setClientSecret(r.data.clientSecret || null);
 
       if (r.data.clientSecret && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
@@ -95,9 +101,9 @@ export default function PaymentPage() {
       });
 
       if (hash) {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
-        await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash: hash, currency: 'USDC' });
-        alert('Transaction submitted! Redirecting to calendar...');
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const resp = await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash: hash, currency: 'USDC' }, { headers: authHeaders() });
+        alert(resp.data?.message || 'Transaction submitted! Redirecting to calendar...');
         router.push('/calendar');
       }
     } catch (err: any) {
@@ -111,9 +117,9 @@ export default function PaymentPage() {
     if (!txHash) return alert('Please enter the transaction hash');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
-      await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash, currency: 'USDC' });
-      alert('Payment recorded. Redirecting...');
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const resp = await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash, currency: 'USDC' }, { headers: authHeaders() });
+      alert(resp.data?.message || 'Payment recorded. Redirecting...');
       router.push('/calendar');
     } catch (err: any) {
       setError(err.response?.data?.error || err.message);
@@ -126,8 +132,8 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL ;
-      await axios.post(`${base}/payments/${bookingId}/simulate-success`);
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      await axios.post(`${base}/payments/${bookingId}/simulate-success`, {}, { headers: authHeaders() });
       alert('Simulated payment success');
       router.push('/calendar');
     } catch (err: any) {

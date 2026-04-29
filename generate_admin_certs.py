@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 
 def generate_certs():
+    password = os.environ.get("ADMIN_P12_PASSWORD") or os.urandom(18).hex()
     # 1. Generate Root CA Key
     ca_key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
     
@@ -65,7 +66,7 @@ def generate_certs():
         key=client_key,
         cert=client_cert,
         cas=[ca_cert],
-        encryption_algorithm=serialization.BestAvailableEncryption(b"bestflats-secure")
+        encryption_algorithm=serialization.BestAvailableEncryption(password.encode("utf-8"))
     )
     
     with open("certs/admin_bundle.p12", "wb") as f:
@@ -73,7 +74,7 @@ def generate_certs():
 
     print("✅ Certificates generated successfully in /certs folder.")
     print("📁 ca.crt: The public CA certificate (Upload this to Cloudflare)")
-    print("📁 admin_bundle.p12: Install this in your browser (Password: bestflats-secure)")
+    print(f"📁 admin_bundle.p12: Install this in your browser. Password: {password}")
 
 if __name__ == "__main__":
     generate_certs()

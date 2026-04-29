@@ -1,61 +1,68 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import Media from '../models/Media.js';
+import { authMiddleware, requireRole } from '../auth/index.js';
 
 let multerAvailable = true;
 let upload = null;
 try {
   const multerPkg = await import('multer');
   const multer = multerPkg.default;
-  // Use memory storage since we are saving to DB
   const storage = multer.memoryStorage();
-
-  function fileFilter(req, file, cb) {
-    if (/^image\//.test(file.mimetype)) return cb(null, true);
-    cb(new Error('Only image files allowed'));
-  }
-
-  upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
-} catch (err) {
+  upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+} catch {
   multerAvailable = false;
 }
 
 const router = express.Router();
 
-// GET /uploads/:filename - Serve from DB
+function detectImage(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+  const hex = buffer.subarray(0, 12).toString('hex');
+  const ascii = buffer.subarray(0, Math.min(buffer.length, 32)).toString('latin1');
+
+  if (hex.startsWith('89504e470d0a1a0a')) return { contentType: 'image/png', ext: '.png' };
+  if (hex.startsWith('ffd8ff')) return { contentType: 'image/jpeg', ext: '.jpg' };
+  if (ascii.startsWith('RIFF') && ascii.substring(8, 12) === 'WEBP') return { contentType: 'image/webp', ext: '.webp' };
+  if (ascii.includes('ftypavif') || ascii.includes('ftypavis')) return { contentType: 'image/avif', ext: '.avif' };
+  return null;
+}
+
+function publicUploadUrl(req, filename) {
+  const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
+  return `${origin}/uploads/${filename}`;
+}
+
 router.get('/:filename', async (req, res) => {
   try {
-    const media = await Media.findOne({ filename: req.params.filename });
+    const filename = path.basename(req.params.filename || '');
+    const media = await Media.findOne({ filename });
     if (!media) return res.status(404).send('Not found');
 
     res.set('Content-Type', media.contentType);
-    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.set('X-Content-Type-Options', 'nosniff');
     res.send(media.data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /uploads - Store in DB
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
   if (req.is('application/json')) {
-    const { b64, filename } = req.body || {};
-    if (!b64 || !filename) return res.status(400).json({ error: 'Missing b64 or filename' });
-    
-    const ext = path.extname(filename).toLowerCase();
-    const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    
-    try {
-      const buf = Buffer.from(b64, 'base64');
-      await Media.create({
-        filename: newName,
-        contentType: `image/${ext.replace('.', '')}`,
-        data: buf
-      });
+    const { b64 } = req.body || {};
+    if (!b64) return res.status(400).json({ error: 'Missing b64' });
 
-      const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-      return res.json({ url: `${origin}/uploads/${newName}`, filename: newName });
+    try {
+      const buf = Buffer.from(String(b64), 'base64');
+      if (buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'File too large' });
+      const detected = detectImage(buf);
+      if (!detected) return res.status(400).json({ error: 'Only PNG, JPEG, WEBP and AVIF images are allowed' });
+
+      const newName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${detected.ext}`;
+      await Media.create({ filename: newName, contentType: detected.contentType, data: buf });
+      return res.json({ url: publicUploadUrl(req, newName), filename: newName });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -66,17 +73,13 @@ router.post('/', async (req, res) => {
       if (err) return res.status(400).json({ error: err.message });
       if (!req.file) return res.status(400).json({ error: 'No file' });
 
-      const newName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
-      
-      try {
-        await Media.create({
-          filename: newName,
-          contentType: req.file.mimetype,
-          data: req.file.buffer
-        });
+      const detected = detectImage(req.file.buffer);
+      if (!detected) return res.status(400).json({ error: 'Only PNG, JPEG, WEBP and AVIF images are allowed' });
 
-        const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-        return res.json({ url: `${origin}/uploads/${newName}`, filename: newName });
+      const newName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${detected.ext}`;
+      try {
+        await Media.create({ filename: newName, contentType: detected.contentType, data: req.file.buffer });
+        return res.json({ url: publicUploadUrl(req, newName), filename: newName });
       } catch (e) {
         return res.status(500).json({ error: e.message });
       }

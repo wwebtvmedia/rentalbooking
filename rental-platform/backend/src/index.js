@@ -2,7 +2,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import helmet from "helmet";
-import path from 'path';
 import { rateLimit } from "express-rate-limit";
 import { logger } from "./logger.js";
 import bookingRoutes from "./routes/bookings.js";
@@ -10,10 +9,8 @@ import availabilityRoutes from "./routes/availabilities.js";
 import calendarRoutes from "./routes/calendar.js";
 import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
-import { authMiddleware } from "./auth/index.js";
+import { authMiddleware, requireRole } from "./auth/index.js";
 import { getMcpServer } from "./mcp/server.js";
-
-import fs from 'fs';
 
 const mcpTransports = new Map();
 
@@ -25,9 +22,7 @@ async function handleMcp(req, res) {
 
   if (transport.sessionId) {
     mcpTransports.set(transport.sessionId, transport);
-    res.on('close', () => {
-      mcpTransports.delete(transport.sessionId);
-    });
+    res.on('close', () => mcpTransports.delete(transport.sessionId));
   }
 }
 
@@ -41,22 +36,17 @@ async function handleMcpMessages(req, res) {
 
 const app = express();
 
-// Security Headers
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'test',
+  skip: () => process.env.NODE_ENV === 'test',
 });
 app.use(limiter);
 
-// Allow one or more frontend origins. Set FRONTEND_ORIGIN as a comma-separated list in production.
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim())
@@ -65,45 +55,31 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
 app.use(cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true);
-    
-    // Check if origin matches any in the allowedOrigins list
     if (allowedOrigins.includes(origin)) return callback(null, true);
-
-    // Dynamic Subdomain Check: Allow anything ending in .bestflats.vip
-    const isBestFlatsSubdomain = /^https?:\/\/(.*?\.)?bestflats\.vip$/.test(origin);
-    if (isBestFlatsSubdomain) return callback(null, true);
-
+    if (/^https:\/\/([a-z0-9-]+\.)?bestflats\.vip$/i.test(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
 }));
 
-// MCP SSE routes
-app.get("/mcp", authMiddleware, (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-  next();
-}, handleMcp);
-app.post("/mcp/messages", authMiddleware, (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-  next();
-}, handleMcpMessages);
+// MCP is powerful: only admins can open sessions and post messages.
+app.get("/mcp", authMiddleware, requireRole('admin'), handleMcp);
+app.post("/mcp/messages", authMiddleware, requireRole('admin'), handleMcpMessages);
 
-// Stripe webhooks need the raw request body, so this route must be mounted before express.json().
 app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   const { stripeWebhookHandler } = await import('./routes/webhooks.js');
   return stripeWebhookHandler(req, res);
 });
 
-app.use(express.json());
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
 const PORT = process.env.PORT || 4000;
 
 const connectWithRetry = () => {
   logger.info("Attempting MongoDB connection...");
   return mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-      logger.info("MongoDB connected successfully");
-    })
+    .then(() => logger.info("MongoDB connected successfully"))
     .catch((err) => {
       logger.error({ err: err.message }, "MongoDB connection failed, retrying in 5 seconds...");
       setTimeout(connectWithRetry, 5000);
@@ -126,17 +102,12 @@ app.use('/admin/platform', (await import('./routes/admin.js')).default);
 app.use('/admin/host', (await import('./routes/host.js')).default);
 app.use('/admin/concierge', (await import('./routes/concierge.js')).default);
 
-// Global error handler
 app.use((err, req, res, next) => {
   logger.error({ err, url: req.url, method: req.method }, "Unhandled error");
   const status = err.status || 500;
-  res.status(status).json({
-    error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message
-  });
+  res.status(status).json({ error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message });
 });
 
-app.listen(PORT, () => {
-  logger.info(`Backend running on port ${PORT}`);
-});
+app.listen(PORT, () => logger.info(`Backend running on port ${PORT}`));
 
 export default app;

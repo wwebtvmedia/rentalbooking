@@ -2,13 +2,14 @@ import mongoose from 'mongoose';
 
 const magicTokenSchema = new mongoose.Schema({
   jti: { type: String, required: true, unique: true },
-  email: { type: String, required: true },
+  emailHash: { type: String, required: true, index: true },
   fullName: { type: String },
+  requestedRole: { type: String, enum: ['guest', 'host', 'concierge', 'contractor'], default: 'guest' },
+  redirectOrigin: { type: String },
   used: { type: Boolean, default: false },
   expiresAt: { type: Date, required: true }
-});
+}, { timestamps: true });
 
-// TTL index to automatically remove expired tokens
 magicTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const MagicToken = mongoose.model('MagicToken', magicTokenSchema);

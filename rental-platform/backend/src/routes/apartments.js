@@ -6,11 +6,60 @@ import { geocodeAddress } from '../lib/geocoder.js';
 import { validate, apartmentSchema } from '../lib/validation.js';
 
 const router = express.Router();
-// ensure auth middleware runs so requireRole can read req.user
 router.use(authMiddleware);
 
+function photosFromBody(photos) {
+  if (Array.isArray(photos)) return photos.map(String).map(s => s.trim()).filter(Boolean);
+  if (typeof photos === 'string') return photos.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
 
-// GET /apartments - list
+function amountDollarsToCents(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return undefined;
+  return Math.round(n * 100);
+}
+
+function optionalObjectId(value) {
+  return value && mongoose.Types.ObjectId.isValid(value) ? value : undefined;
+}
+
+async function buildPayload(body, existing = {}) {
+  const photos = body.photos !== undefined ? photosFromBody(body.photos) : existing.photos;
+  let lat = body.lat !== undefined && body.lat !== '' ? Number(body.lat) : existing.lat;
+  let lon = body.lon !== undefined && body.lon !== '' ? Number(body.lon) : existing.lon;
+  const address = body.address !== undefined ? body.address : (existing.address || '');
+
+  if ((lat === undefined || lon === undefined) && address) {
+    const g = await geocodeAddress(address);
+    if (g) {
+      lat = lat === undefined ? g.lat : lat;
+      lon = lon === undefined ? g.lon : lon;
+    }
+  }
+
+  const payload = {
+    name: body.name ?? existing.name,
+    description: body.description ?? existing.description ?? '',
+    smallDescription: body.smallDescription ?? existing.smallDescription ?? '',
+    address,
+    photos,
+    pricePerNight: body.pricePerNight !== undefined ? Number(body.pricePerNight || 0) : existing.pricePerNight,
+    rules: body.rules ?? existing.rules ?? '',
+    lat,
+    lon,
+    ethAddress: body.ethAddress !== undefined ? (body.ethAddress || undefined) : existing.ethAddress,
+    hostId: body.hostId !== undefined ? optionalObjectId(body.hostId) : existing.hostId,
+    assignedConciergeId: body.assignedConciergeId !== undefined ? optionalObjectId(body.assignedConciergeId) : existing.assignedConciergeId,
+  };
+
+  if (body.depositAmount !== undefined) payload.depositAmount = amountDollarsToCents(body.depositAmount);
+  else if (existing.depositAmount !== undefined) payload.depositAmount = existing.depositAmount;
+
+  return payload;
+}
+
 router.get('/', async (req, res) => {
   try {
     const list = await Apartment.find().sort({ name: 1 });
@@ -20,21 +69,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /apartments/:id
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    let apt;
-    
-    if (mongoose.Types.ObjectId.isValid(id)) {
-        apt = await Apartment.findById(id);
-    } 
-    
-    // If not found by ID or not a valid ID, try finding by slug
-    if (!apt) {
-        apt = await Apartment.findOne({ slug: id });
-    }
-
+    let apt = mongoose.Types.ObjectId.isValid(id) ? await Apartment.findById(id) : null;
+    if (!apt) apt = await Apartment.findOne({ slug: id });
     if (!apt) return res.status(404).json({ error: 'Residence not found in database' });
     res.json(apt);
   } catch (err) {
@@ -42,38 +81,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-
-
-// POST /apartments - admin only
 router.post('/', requireRole('admin'), validate(apartmentSchema), async (req, res) => {
   try {
-    const photos = Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : []);
-    let lat = req.body.lat ? Number(req.body.lat) : undefined;
-    let lon = req.body.lon ? Number(req.body.lon) : undefined;
-    const address = req.body.address || '';
-
-    // if lat/lon missing and address provided, try geocoding
-    if ((lat === undefined || lon === undefined) && address) {
-      const g = await geocodeAddress(address);
-      if (g) {
-        lat = lat === undefined ? g.lat : lat;
-        lon = lon === undefined ? g.lon : lon;
-      }
-    }
-
-    const payload = {
-      name: req.body.name,
-      description: req.body.description || '',
-      smallDescription: req.body.smallDescription || '',
-      address,
-      photos,
-      pricePerNight: Number(req.body.pricePerNight || 0),
-      rules: req.body.rules || '',
-      lat,
-      lon,
-      // depositAmount provided by admin in dollars (e.g., 100), store in cents for precision
-      depositAmount: req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : undefined
-    };
+    const payload = await buildPayload(req.body);
     const apt = await Apartment.create(payload);
     res.status(201).json(apt);
   } catch (err) {
@@ -81,41 +91,11 @@ router.post('/', requireRole('admin'), validate(apartmentSchema), async (req, re
   }
 });
 
-// PUT /apartments/:id - admin only
 router.put('/:id', requireRole('admin'), validate(apartmentSchema), async (req, res) => {
   try {
     const apt = await Apartment.findById(req.params.id);
     if (!apt) return res.status(404).json({ error: 'Not found' });
-    apt.name = req.body.name ?? apt.name;
-    apt.description = req.body.description ?? apt.description;
-    apt.smallDescription = req.body.smallDescription ?? apt.smallDescription;
-
-    // handle photos
-    apt.photos = Array.isArray(req.body.photos) ? req.body.photos : (typeof req.body.photos === 'string' ? req.body.photos.split(',').map(s => s.trim()).filter(Boolean) : apt.photos);
-
-    apt.pricePerNight = req.body.pricePerNight !== undefined ? Number(req.body.pricePerNight) : apt.pricePerNight;
-    apt.rules = req.body.rules ?? apt.rules;
-
-    // address updates: if address changed and no lat/lon provided, attempt geocode
-    const newAddress = req.body.address !== undefined ? req.body.address : apt.address;
-    const latProvided = req.body.lat !== undefined;
-    const lonProvided = req.body.lon !== undefined;
-
-    apt.address = newAddress;
-
-    if (!latProvided && !lonProvided && newAddress) {
-      // try geocode (async)
-      const g = await geocodeAddress(newAddress);
-      if (g) {
-        apt.lat = g.lat;
-        apt.lon = g.lon;
-      }
-    } else {
-      apt.lat = latProvided ? Number(req.body.lat) : apt.lat;
-      apt.lon = lonProvided ? Number(req.body.lon) : apt.lon;
-    }
-
-    apt.depositAmount = req.body.depositAmount !== undefined ? Math.round(Number(req.body.depositAmount) * 100) : apt.depositAmount;
+    Object.assign(apt, await buildPayload(req.body, apt));
     await apt.save();
     res.json(apt);
   } catch (err) {
@@ -123,7 +103,6 @@ router.put('/:id', requireRole('admin'), validate(apartmentSchema), async (req, 
   }
 });
 
-// DELETE /apartments/:id - admin only
 router.delete('/:id', requireRole('admin'), async (req, res) => {
   try {
     const apt = await Apartment.findById(req.params.id);

@@ -42,7 +42,6 @@ if [ ! -f .env ]; then
     sed -i "s|AUTH_JWT_SECRET=change-me-to-a-secure-random-value|AUTH_JWT_SECRET=$RANDOM_JWT|g" .env
     sed -i "s|MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value|MASTER_ENCRYPTION_KEY=$RANDOM_MASTER|g" .env
     sed -i "s|PLATFORM_ADMIN_KEY=change-me-to-a-secure-random-value|PLATFORM_ADMIN_KEY=$RANDOM_ADMIN|g" .env
-    sed -i "s|NEXT_PUBLIC_PLATFORM_ADMIN_KEY=change-me-to-a-secure-random-value|NEXT_PUBLIC_PLATFORM_ADMIN_KEY=$RANDOM_ADMIN|g" .env
     
     echo "✅ .env created with fresh secrets."
 else
@@ -55,7 +54,6 @@ echo "🚀 Starting $BRAND_NAME Deployment..."
 
 # Ensure .env is available in the rental-platform directory for podman-compose
 cp .env rental-platform/.env
-cp .env rental-platform/frontend/.env
 
 # 3. Build and Start
 echo "🏗️  Building and starting services..."

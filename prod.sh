@@ -62,8 +62,7 @@ fi
 
 # Ensure .env is available in subdirectories for building
 cp .env rental-platform/.env
-cp .env rental-platform/frontend/.env
-cp .env rental-platform/backend/.env
+# Compose receives private env through rental-platform/.env. Do not copy secrets into build contexts.
 
 # 2. Cleanup and Build
 echo "🧹 Cleaning up existing containers..."

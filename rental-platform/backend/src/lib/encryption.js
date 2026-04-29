@@ -2,74 +2,86 @@ import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
-const SALT_LENGTH = 16;
-const TAG_LENGTH = 16;
 
-// The Master Key protects the individual user keys and blind indexes
-const MASTER_KEY = process.env.MASTER_ENCRYPTION_KEY || 'a-very-secret-master-key-for-bestflats-vip';
+function getMasterSecret() {
+  const secret = process.env.MASTER_ENCRYPTION_KEY;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('MASTER_ENCRYPTION_KEY must be set in production');
+  }
+  return secret || 'dev-only-master-encryption-key-change-me';
+}
+
+function getMasterKeyBuffer() {
+  return crypto.createHash('sha256').update(getMasterSecret()).digest();
+}
+
+export const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
+export const safeEqual = (a, b) => {
+  const left = Buffer.from(String(a || ''));
+  const right = Buffer.from(String(b || ''));
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+};
 
 /**
- * Protect a user key using the master key
+ * Protect a per-user key using the platform master key.
+ * Legacy plaintext hex keys are still accepted by unprotectKey() for backwards compatibility.
  */
 export const protectKey = (userKey) => {
-    return userKey; // Transparent layer for now
+  if (!userKey) return userKey;
+  if (String(userKey).startsWith('v1:')) return userKey;
+
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, getMasterKeyBuffer(), iv);
+  let encrypted = cipher.update(String(userKey), 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `v1:${iv.toString('hex')}:${authTag}:${encrypted}`;
 };
 
-/**
- * Unprotect a user key using the master key
- */
 export const unprotectKey = (protectedKey) => {
-    return protectedKey; // Transparent layer for now
+  if (!protectedKey) return protectedKey;
+  const value = String(protectedKey);
+  if (!value.startsWith('v1:')) return value;
+
+  const [, ivHex, authTagHex, encrypted] = value.split(':');
+  const decipher = crypto.createDecipheriv(ALGORITHM, getMasterKeyBuffer(), Buffer.from(ivHex, 'hex'));
+  decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
 };
 
-/**
- * Generate a unique encryption key for a new user
- */
-export const generateUserKey = () => {
-    return crypto.randomBytes(32).toString('hex');
-};
+export const generateUserKey = () => crypto.randomBytes(32).toString('hex');
 
-/**
- * Encrypt data using a user-specific key
- */
 export const encrypt = (text, userKey) => {
-    if (!text) return text;
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const keyBuffer = Buffer.from(userKey, 'hex');
-    const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);
-    
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag().toString('hex');
-    
-    // Return IV + AuthTag + EncryptedData
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  if (text === undefined || text === null || text === '') return text;
+  const rawKey = unprotectKey(userKey);
+  const keyBuffer = Buffer.from(rawKey, 'hex');
+  if (keyBuffer.length !== 32) throw new Error('Invalid user encryption key');
+
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);
+  let encrypted = cipher.update(String(text), 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
 };
 
-/**
- * Decrypt data using a user-specific key
- */
 export const decrypt = (encryptedData, userKey) => {
-    if (!encryptedData || !encryptedData.includes(':')) return encryptedData;
-    
-    const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    
-    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(userKey, 'hex'), iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
+  if (!encryptedData || !String(encryptedData).includes(':')) return encryptedData;
+  const rawKey = unprotectKey(userKey);
+  const [ivHex, authTagHex, encrypted] = String(encryptedData).split(':');
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(rawKey, 'hex'), Buffer.from(ivHex, 'hex'));
+  decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
 };
 
-/**
- * Generate a deterministic hash for searching (e.g. searching by email)
- * Since we can't search encrypted data, we store a blind index (hash).
- */
 export const blindIndex = (text) => {
-    return crypto.createHmac('sha256', MASTER_KEY).update(text.toLowerCase()).digest('hex');
+  const normalized = normalizeEmail(text);
+  if (!normalized) return '';
+  return crypto.createHmac('sha256', getMasterSecret()).update(normalized).digest('hex');
 };

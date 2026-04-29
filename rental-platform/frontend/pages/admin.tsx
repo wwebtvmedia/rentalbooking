@@ -46,7 +46,7 @@ export default function AdminPage() {
         address: form.address,
         photos: photosArr,
         pricePerNight: Number(form.pricePerNight),
-        depositAmount: form.depositAmount ? Math.round(Number(form.depositAmount) * 100) : undefined,
+        depositAmount: form.depositAmount ? Number(form.depositAmount) : undefined,
         ethAddress: form.ethAddress,
         lat: form.lat ? Number(form.lat) : undefined,
         lon: form.lon ? Number(form.lon) : undefined,
@@ -153,14 +153,16 @@ export default function AdminPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
                   <div className="flex gap-2 mb-2">
-                    <input ref={fileRef} type="file" accept="image/*" className="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/avif" className="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                     <button className="btn btn-outline py-1 px-3 text-xs" onClick={async () => {
                       if (!fileRef.current?.files?.length) return;
                       const file = fileRef.current.files[0];
                       const fd = new FormData();
                       fd.append('file', file);
                       const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-                      const res = await fetch(`${base}/uploads`, { method: 'POST', body: fd });
+                      const uploadToken = window.prompt('Admin token for upload');
+                      if (!uploadToken) return setMsg('Admin token required for upload');
+                      const res = await fetch(`${base}/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${uploadToken}` }, body: fd });
                       if (res.ok) {
                         const json = await res.json();
                         setUploadedPhotos(prev => [...prev, json.url]);
