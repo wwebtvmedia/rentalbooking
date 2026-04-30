@@ -19,30 +19,28 @@ if [ -d "rental-platform" ]; then (cd rental-platform && podman-compose down) ||
 if [ "$IS_PI" = true ]; then
     echo "💾 Preparing external storage for Raspberry Pi..."
     
-    # 1. Find the primary USB mount point
-    USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
-
-    if [ -z "$USB_ROOT" ]; then
-        echo "❌ Error: USB drive not found under /media/benyedde/"
-        exit 1
+    # 1. Find the best mount point (Prioritize 'rootfs' because Podman uses it)
+    if mount | grep -q "/media/benyedde/rootfs"; then
+        USB_ROOT="/media/benyedde/rootfs"
+    else
+        USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
     fi
 
-    # 2. Cleanup any "ghost" or double mounts to avoid conflicts
-    if mount | grep -q "/media/benyedde/rootfs"; then
-        echo "🧹 Cleaning up duplicate rootfs mount..."
-        sudo umount -l /media/benyedde/rootfs || true
+    if [ -z "$USB_ROOT" ]; then
+        echo "❌ Error: No USB drive found under /media/benyedde/"
+        exit 1
     fi
 
     echo "✅ Using USB Mount: $USB_ROOT"
 
-    # 3. Aggressively ensure execution is allowed
+    # 2. Aggressively ensure execution is allowed
+    # We use quotes to handle names like "New Volume"
     sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
     
-    # 4. Fix permissions for the user
-    sudo chown -R $USER:$USER "$USB_ROOT"
-    
-    # 5. Ensure data directory exists
-    mkdir -p "$USB_ROOT/bestflats_data/mongo"
+    # 3. Fix permissions for the data directory
+    # We use sudo for the mkdir to ensure it works even if Podman is cranky
+    sudo mkdir -p "$USB_ROOT/bestflats_data/mongo"
+    sudo chown -R $USER:$USER "$USB_ROOT/bestflats_data"
 else
     # PC/Local logic
     echo "📂 Ensuring local data directories exist..."

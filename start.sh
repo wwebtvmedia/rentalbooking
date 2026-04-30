@@ -10,7 +10,11 @@ ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
     echo "🔍 Raspberry Pi (ARM) detected. Applying storage optimizations."
     
-    USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
+    if mount | grep -q "/media/benyedde/rootfs"; then
+        USB_ROOT="/media/benyedde/rootfs"
+    else
+        USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
+    fi
     
     if [ -n "$USB_ROOT" ] && [ -d "$USB_ROOT" ]; then
         echo "✅ Detected USB Mount: $USB_ROOT"
@@ -18,12 +22,10 @@ if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
         # Aggressively ensure execution permissions
         sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
 
-        # Use internal storage for temporary build files (more stable for Podman execution)
-        # We ONLY use the USB for database data
         export MONGO_DATA_DIR="$USB_ROOT/bestflats_data/mongo"
         
         echo "📁 Preparing MongoDB data directory..."
-        mkdir -p "$MONGO_DATA_DIR"
+        sudo mkdir -p "$MONGO_DATA_DIR"
         podman unshare chown -R 999:999 "$MONGO_DATA_DIR"
         echo "💾 Using USB Disk for Persistent Data."
     fi
