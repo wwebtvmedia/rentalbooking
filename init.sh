@@ -28,9 +28,15 @@ if [ "$IS_PI" = true ]; then
 
     echo "✅ Found USB Mount: $USB_ROOT"
 
-    # Ensure execution is allowed
-    echo "🔓 Ensuring exec permissions..."
+    # Ensure execution is allowed (Aggressive remount)
+    echo "🔓 Removing execution restrictions (noexec) from $USB_ROOT..."
     sudo mount -o remount,exec "$USB_ROOT" || true
+    
+    # Double check mount status
+    if mount | grep "$USB_ROOT" | grep -q "noexec"; then
+        echo "⚠️  Warning: Drive is still in noexec mode. Attempting alternative remount..."
+        sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
+    fi
 
     # Fix permissions
     echo "Setting ownership..."

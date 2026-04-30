@@ -16,8 +16,13 @@ if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
     if [ -n "$USB_ROOT" ] && [ -d "$USB_ROOT" ]; then
         echo "✅ Detected USB Mount: $USB_ROOT"
         # CRITICAL: Ensure the USB drive allows execution
-        echo "🔓 Ensuring USB execution permissions..."
-        sudo mount -o remount,exec "$USB_ROOT" || echo "⚠️  Warning: Remount failed."
+        echo "🔓 Removing execution restrictions (noexec) from $USB_ROOT..."
+        sudo mount -o remount,exec "$USB_ROOT" || true
+        
+        # Double check
+        if mount | grep "$USB_ROOT" | grep -q "noexec"; then
+            sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
+        fi
 
         mkdir -p "$USB_ROOT/tmp"
         export TMPDIR="$USB_ROOT/tmp"
