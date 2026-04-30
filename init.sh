@@ -18,7 +18,8 @@ if [ -d "rental-platform" ]; then (cd rental-platform && podman-compose down) ||
 
 if [ "$IS_PI" = true ]; then
     echo "💾 Preparing external storage for Raspberry Pi..."
-    # Auto-detect USB mount point
+    
+    # 1. Find the primary USB mount point
     USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
 
     if [ -z "$USB_ROOT" ]; then
@@ -26,24 +27,21 @@ if [ "$IS_PI" = true ]; then
         exit 1
     fi
 
-    echo "✅ Found USB Mount: $USB_ROOT"
-
-    # Ensure execution is allowed (Aggressive remount)
-    echo "🔓 Removing execution restrictions (noexec) from $USB_ROOT..."
-    sudo mount -o remount,exec "$USB_ROOT" || true
-    
-    # Double check mount status
-    if mount | grep "$USB_ROOT" | grep -q "noexec"; then
-        echo "⚠️  Warning: Drive is still in noexec mode. Attempting alternative remount..."
-        sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
+    # 2. Cleanup any "ghost" or double mounts to avoid conflicts
+    if mount | grep -q "/media/benyedde/rootfs"; then
+        echo "🧹 Cleaning up duplicate rootfs mount..."
+        sudo umount -l /media/benyedde/rootfs || true
     fi
 
-    # Fix permissions
-    echo "Setting ownership..."
+    echo "✅ Using USB Mount: $USB_ROOT"
+
+    # 3. Aggressively ensure execution is allowed
+    sudo mount -o remount,rw,exec,dev,suid "$USB_ROOT" || true
+    
+    # 4. Fix permissions for the user
     sudo chown -R $USER:$USER "$USB_ROOT"
     
-    # Ensure directories exist
-    mkdir -p "$USB_ROOT/podman-storage/tmp/"
+    # 5. Ensure data directory exists
     mkdir -p "$USB_ROOT/bestflats_data/mongo"
 else
     # PC/Local logic
