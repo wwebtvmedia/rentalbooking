@@ -9,13 +9,22 @@ set -e
 ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
     echo "🔍 Raspberry Pi (ARM) detected. Applying storage optimizations."
-    # Use the USB disk for temporary build files and data
     USB_ROOT="/media/benyedde/rootfs"
     if [ -d "$USB_ROOT" ]; then
+        # CRITICAL: Ensure the USB drive allows execution (stat /usr/local/bin/docker-entrypoint.sh permission denied fix)
+        echo "🔓 Ensuring USB execution permissions..."
+        sudo mount -o remount,exec "$USB_ROOT" || echo "⚠️  Warning: Remount failed, check sudo permissions."
+
         mkdir -p "$USB_ROOT/tmp"
         export TMPDIR="$USB_ROOT/tmp"
         export PODMAN_TMPDIR="$USB_ROOT/tmp"
         export MONGO_DATA_DIR="$USB_ROOT/bestflats_data/mongo"
+        
+        echo "📁 Preparing MongoDB data directory..."
+        mkdir -p "$MONGO_DATA_DIR"
+        # Fix internal container UID mapping for MongoDB (UID 999)
+        podman unshare chown -R 999:999 "$MONGO_DATA_DIR"
+        
         echo "💾 Using USB Disk for storage and temporary build files."
     fi
 else

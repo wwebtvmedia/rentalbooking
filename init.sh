@@ -21,24 +21,19 @@ if [ "$IS_PI" = true ]; then
     # Ensure mount point exists
     sudo mkdir -p /media/benyedde/rootfs
 
-    # Mount sda2
-    echo "Mounting /dev/sda2..."
-    sudo mount /dev/sda2 /media/benyedde/rootfs || echo "Info: /dev/sda2 already mounted or mount failed."
+    # Mount sda2 and ensure execution is allowed
+    echo "Mounting /dev/sda2 with exec permissions..."
+    sudo mount /dev/sda2 /media/benyedde/rootfs || true
+    sudo mount -o remount,exec /media/benyedde/rootfs || true
 
     # Fix permissions
     echo "Setting ownership and permissions..."
     sudo chown -R $USER:$USER /media/benyedde/rootfs
     sudo chmod -R u+rwX,go-rwx /media/benyedde/rootfs
 
-    # Cleanup temporary storage
-    echo "🧹 Cleaning up podman-storage tmp..."
-    rm -rf /media/benyedde/rootfs/podman-storage/tmp/
+    # Ensure directories exist
     mkdir -p /media/benyedde/rootfs/podman-storage/tmp/
-
-    # Ensure MongoDB data directory exists and is world-writable
-    echo "📁 Ensuring MongoDB data directory exists with full access..."
     mkdir -p /media/benyedde/rootfs/bestflats_data/mongo
-    sudo chmod -R u+rwX,go-rwx /media/benyedde/rootfs/bestflats_data/mongo
 else
     # PC/Local logic
     echo "📂 Ensuring local data directories exist..."
