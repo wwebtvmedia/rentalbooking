@@ -10,9 +10,8 @@ ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
     echo "🔍 Raspberry Pi (ARM) detected. Applying storage optimizations."
     
-    if mount | grep -q "/media/benyedde/rootfs"; then
-        USB_ROOT="/media/benyedde/rootfs"
-    else
+    USB_ROOT=$(find /media/benyedde -name "bestflats_data" -type d -print -quit | sed 's|/bestflats_data||')
+    if [ -z "$USB_ROOT" ]; then
         USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
     fi
     
