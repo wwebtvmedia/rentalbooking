@@ -10,9 +10,10 @@ ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm"* ]]; then
     echo "🔍 Raspberry Pi (ARM) detected. Applying storage optimizations."
     
-    USB_ROOT=$(find /media/benyedde -name "bestflats_data" -type d -print -quit | sed 's|/bestflats_data||')
+    USB_ROOT=$(find /media/benyedde -name "bestflats_data" -type d -print -quit 2>/dev/null | sed 's|/bestflats_data||')
     if [ -z "$USB_ROOT" ]; then
-        USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d | head -n 1)
+        # Fallback to the first available directory that isn't rootfs
+        USB_ROOT=$(find /media/benyedde -maxdepth 1 -mindepth 1 -type d ! -name "rootfs" | head -n 1)
     fi
     
     if [ -n "$USB_ROOT" ] && [ -d "$USB_ROOT" ]; then
