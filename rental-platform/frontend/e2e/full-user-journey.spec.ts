@@ -18,7 +18,10 @@ test.describe('End-to-End User Journey (UI + SMTP)', () => {
     }
   });
 
-  test('should register a new user and login via Mailpit magic link', async ({ page, request }) => {
+  test('should register a new user and login via Mailpit magic link', async ({ page, request, baseURL }) => {
+    if (!baseURL?.includes('localhost') && !baseURL?.includes('127.0.0.1')) {
+      test.skip(true, 'Mailpit tests are only for local/CI environments. Production uses real SMTP.');
+    }
     // 1. Visit the homepage
     await page.goto('/');
     

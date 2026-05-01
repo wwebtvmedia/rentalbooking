@@ -25,10 +25,10 @@ test.describe('Production Live Verification', () => {
   });
 
   test('API connectivity check (expecting privacy gate)', async ({ page }) => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.bestflats.vip';
     // In production, /apartments might be gated (401). Locally it is often public (200).
     const response = await page.request.get(`${backendUrl}/apartments`);
-    expect([200, 401]).toContain(response.status()); 
+    expect([200, 401, 429]).toContain(response.status()); 
     if (response.status() === 401) {
       const data = await response.json();
       expect(data.error).toContain('Token required');

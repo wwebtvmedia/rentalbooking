@@ -27,7 +27,10 @@ test.describe('Secure Agent Tunnel (MCP)', () => {
     expect(mcpResult).toBe('failed');
   });
 
-  test('MCP connection should succeed with valid agent token', async ({ page }) => {
+  test('MCP connection should succeed with valid agent token', async ({ page, baseURL }) => {
+    if (!baseURL?.includes('localhost') && !baseURL?.includes('127.0.0.1')) {
+      test.skip(true, 'MCP success tests require internal test-mode endpoints not enabled in production.');
+    }
     const testEmail = `agent-verify-${Date.now()}@bestflats.vip`;
     // 1. Get an agent token (using the test-mode endpoint)
     const tokenRes = await page.request.post(`${BACKEND_URL}/auth/magic`, {
