@@ -60,7 +60,7 @@ else
 fi
 
 # Load brand name for script messages
-BRAND_NAME=$(grep NEXT_PUBLIC_BRAND_NAME .env | cut -d '=' -f2 || echo "bestflats.vip")
+BRAND_NAME=$(grep NEXT_PUBLIC_BRAND_NAME .env | cut -d '=' -f2- || echo "bestflats.vip")
 echo "🚀 Starting $BRAND_NAME Deployment..."
 
 # Ensure .env is available in the rental-platform directory for podman-compose
@@ -81,7 +81,7 @@ done
 
 echo -e "\n🌱 Seeding database with initial apartments..."
 # Load admin key from .env
-ADMIN_KEY=$(grep PLATFORM_ADMIN_KEY .env | cut -d '=' -f2)
+ADMIN_KEY=$(grep PLATFORM_ADMIN_KEY .env | cut -d '=' -f2-)
 curl -X GET -H "x-platform-admin-key: $ADMIN_KEY" "http://localhost:4000/seed/unprotected?force=true"
 
 echo "
