@@ -52,12 +52,28 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+// Add common production variations to allowedOrigins
+if (process.env.NODE_ENV === 'production') {
+    if (!allowedOrigins.includes("https://bestflats.vip")) allowedOrigins.push("https://bestflats.vip");
+    if (!allowedOrigins.includes("https://www.bestflats.vip")) allowedOrigins.push("https://www.bestflats.vip");
+}
+
 app.use(cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true);
+    
+    // Exact match in allowedOrigins
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // Regex match for bestflats.vip subdomains
     if (/^https:\/\/([a-z0-9-]+\.)?bestflats\.vip$/i.test(origin)) return callback(null, true);
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) return callback(null, true);
+    
+    // Local development
+    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+        return callback(null, true);
+    }
+    
+    logger.warn({ origin }, "CORS blocked for origin");
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
