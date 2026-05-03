@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { API_BASE_URL } from '../lib/config';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -27,7 +28,7 @@ const CalendarPage = () => {
     const fetchApartment = async () => {
       if (!apartmentId) return setApartment(null);
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = API_BASE_URL;
         const res = await axios.get(`${base}/apartments/${apartmentId}`);
         setApartment(res.data);
       } catch (err) {
@@ -45,7 +46,7 @@ const CalendarPage = () => {
       const params: any = {};
       if (apartmentId) params.apartmentId = apartmentId;
       
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const res = await axios.get(`${base}/calendar/events`, { params });
       setEvents(res.data || []);
     } catch (err: any) {
@@ -67,7 +68,7 @@ const CalendarPage = () => {
   async function createBooking(payload: { start: string; end: string; name: string; email: string }) {
     try {
       const token = localStorage.getItem('token');
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const resp = await axios.post(`${base}/bookings`, {
         fullName: payload.name,
         email: payload.email,

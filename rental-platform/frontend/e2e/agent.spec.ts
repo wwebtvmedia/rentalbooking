@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Secure Agent Tunnel (MCP)', () => {
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.bestflats.vip';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
   test('MCP connection should fail without token', async ({ page }) => {
     await page.goto('/');

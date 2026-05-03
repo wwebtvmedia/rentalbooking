@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import User from "../models/User.js";
-import { encrypt, generateUserKey, protectKey, blindIndex, normalizeEmail } from "../lib/encryption.js";
+import { blindIndex, normalizeEmail } from "../lib/encryption.js";
+import { findOrCreateUser } from "../auth/users.js";
 import { logger } from "../logger.js";
 import Apartment from "../models/Apartment.js";
 import { geocodeAddress } from "../lib/geocoder.js";
@@ -28,22 +28,13 @@ export function getMcpServer() {
     const emailHash = blindIndex(email);
     logger.info({ forensicId, emailHash }, "MCP_TOOL_CALL: create_customer initiated");
 
-    const existing = await User.findOne({ emailHash, role: 'guest' });
-    if (existing) {
-      return { content: [{ type: "text", text: `Customer already exists with ID: ${existing.id}` }], structuredContent: { id: existing.id } };
-    }
+    const result = await findOrCreateUser({ fullName: input.fullName, email, role: 'guest' });
 
-    const userKey = generateUserKey();
-    const customer = await User.create({
-      fullName: encrypt(input.fullName, userKey),
-      email: encrypt(email, userKey),
-      emailHash,
-      role: 'guest',
-      userKey: protectKey(userKey)
-    });
-
-    logger.info({ forensicId, customerId: customer.id }, "MCP_TOOL_CALL: Customer created successfully");
-    return { content: [{ type: "text", text: `Customer created with ID: ${customer.id}` }], structuredContent: { id: customer.id } };
+    logger.info({ forensicId, customerId: result.user.id }, "MCP_TOOL_CALL: Customer available");
+    return {
+      content: [{ type: "text", text: `Customer available with ID: ${result.user.id}` }],
+      structuredContent: { id: result.user.id }
+    };
   });
 
   serverInstance.tool("create_apartment", {

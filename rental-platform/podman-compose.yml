@@ -14,7 +14,8 @@ services:
     container_name: backend
     restart: always
     environment:
-      - SMTP_URL=smtp://mailpit:1025
+      - SMTP_URL=${SMTP_URL:-smtp://mailpit:1025}
+      - MAIL_FROM=${MAIL_FROM:-no-reply@bestflats.vip}
     env_file: .env
     ports:
       - "4000:4000"

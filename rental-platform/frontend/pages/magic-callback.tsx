@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Head from 'next/head';
+import { API_BASE_URL } from '../lib/config';
 
 export default function MagicCallback() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function MagicCallback() {
     if (!token) return;
     const verify = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = API_BASE_URL;
         const res = await axios.post(`${base}/auth/magic/verify`, { token });
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('guest', JSON.stringify(res.data.user));

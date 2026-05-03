@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Layout from '../../components/Layout';
+import { API_BASE_URL } from '../../lib/config';
 
 export default function PlatformDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -12,7 +13,7 @@ export default function PlatformDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const base = API_BASE_URL;
       const token = localStorage.getItem('token');
       
       const headers: any = { Authorization: `Bearer ${token}` };
@@ -33,7 +34,7 @@ export default function PlatformDashboard() {
   const removeUser = async (id: string) => {
     if (!window.confirm('Are you sure you want to remove this member?')) return;
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const base = API_BASE_URL;
       const headers: any = { Authorization: `Bearer ${localStorage.getItem('token')}` };
 
       await axios.delete(`${base}/admin/platform/users/${id}`, { headers });

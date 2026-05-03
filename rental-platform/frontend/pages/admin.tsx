@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL, BRAND_NAME, assetUrl } from '../lib/config';
 import Head from 'next/head';
 import Link from 'next/link';
 
@@ -11,11 +12,9 @@ export default function AdminPage() {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
 
-  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
-
   const loadList = async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const res = await axios.get(`${base}/apartments`);
       setList(res.data);
     } catch (err) {
@@ -25,16 +24,11 @@ export default function AdminPage() {
 
   useEffect(() => { loadList(); }, []);
 
-  const getImgUrl = (path: string) => {
-    if (!path) return '/placeholder.png';
-    if (path.startsWith('http')) return path;
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-    return `${base}${path}`;
-  };
+  const getImgUrl = (path: string) => assetUrl(path);
 
   const create = async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const token = window.prompt('Admin token');
       if (!token) return setMsg('Admin token required');
       const photosArr = [...(uploadedPhotos || []), ...form.photos.split(',').map((s: string) => s.trim()).filter(Boolean)];
@@ -71,7 +65,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <Head>
-        <title>Admin Dashboard | bestflats.vip</title>
+        <title>{`Admin Dashboard | ${BRAND_NAME}`}</title>
 
       </Head>
 
@@ -82,7 +76,7 @@ export default function AdminPage() {
             <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center mr-2">
               <img src="/tree4fivelogo.png" alt="bestflats.vip logo" className="w-full h-full object-cover" />
             </div>
-            <span className="brand-text">bestflats.vip Admin</span>
+            <span className="brand-text">{BRAND_NAME} Admin</span>
           </Link>
 
           <Link href="/" className="btn btn-outline text-xs py-1 px-3">
@@ -139,7 +133,7 @@ export default function AdminPage() {
                     }}>Use GPS</button>
                     <button className="btn btn-outline py-1 px-3 text-xs" onClick={async () => {
                       if (!form.address) return setMsg('Address is empty');
-                      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+                      const base = API_BASE_URL;
                       const res = await fetch(`${base}/geocode?address=${encodeURIComponent(form.address)}`);
                       const j = await res.json();
                       if (j.ok) {
@@ -159,7 +153,7 @@ export default function AdminPage() {
                       const file = fileRef.current.files[0];
                       const fd = new FormData();
                       fd.append('file', file);
-                      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+                      const base = API_BASE_URL;
                       const uploadToken = window.prompt('Admin token for upload');
                       if (!uploadToken) return setMsg('Admin token required for upload');
                       const res = await fetch(`${base}/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${uploadToken}` }, body: fd });
@@ -226,7 +220,7 @@ export default function AdminPage() {
                         <button className="p-2 text-gray-600 hover:text-red-600 transition" onClick={async () => {
                           const token = window.prompt('Admin token');
                           if (!token) return;
-                          const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+                          const base = API_BASE_URL;
                           await axios.delete(`${base}/apartments/${a._id}`, { headers: { Authorization: `Bearer ${token}` } });
                           loadList();
                         }}>

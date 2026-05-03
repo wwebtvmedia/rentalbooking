@@ -18,7 +18,13 @@ export default function Layout({ children, title }: LayoutProps) {
 
   useEffect(() => {
     const raw = localStorage.getItem('guest');
-    if (raw) setGuest(JSON.parse(raw));
+    if (raw) {
+      try {
+        setGuest(JSON.parse(raw));
+      } catch {
+        localStorage.removeItem('guest');
+      }
+    }
   }, []);
 
   const logout = () => {
@@ -57,7 +63,7 @@ export default function Layout({ children, title }: LayoutProps) {
           <div className="flex items-center justify-end gap-2 sm:gap-8">
             {guest ? (
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden xl:inline">Member: {guest.fullName.split(' ')[0]}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden xl:inline">Member: {(guest.fullName || 'Member').split(' ')[0]}</span>
                 <button onClick={logout} className="text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition">Exit</button>
               </div>
             ) : (
@@ -65,7 +71,7 @@ export default function Layout({ children, title }: LayoutProps) {
                 Sign In
               </Link>
             )}
-            <button className="btn btn-primary !py-3 px-4 sm:!px-8 text-[10px] whitespace-nowrap">Book Now</button>
+            <Link href="/collections" className="btn btn-primary !py-3 px-4 sm:!px-8 text-[10px] whitespace-nowrap">Book Now</Link>
           </div>
         </div>
       </header>
@@ -113,7 +119,7 @@ export default function Layout({ children, title }: LayoutProps) {
             <div className="flex gap-12">
               <Link href="/privacy" className="hover:text-black transition">Privacy</Link>
               <Link href="/terms" className="hover:text-black transition">Terms</Link>
-              <Link href="#" className="hover:text-black transition">Instagram</Link>
+              <a href={process.env.NEXT_PUBLIC_INSTAGRAM_URL || 'https://www.instagram.com/'} target="_blank" rel="noreferrer" className="hover:text-black transition">Instagram</a>
             </div>
           </div>
         </div>

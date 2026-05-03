@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('API Security Enforcement', () => {
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.bestflats.vip';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
   test('GET /apartments should be PUBLIC (200 OK)', async ({ request }) => {
     const response = await request.get(`${BACKEND_URL}/apartments`);

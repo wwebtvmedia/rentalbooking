@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import logo from '../styles/tree4fivelogo.png';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 
 export default function Header() {
   const router = useRouter();
@@ -43,7 +41,7 @@ export default function Header() {
     } catch (e) {}
   }
 
-  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
+  function onChange(e: ChangeEvent<HTMLSelectElement>) {
     const val = e.target.value;
     setSelected(val);
     const query = { ...router.query };
@@ -56,7 +54,7 @@ export default function Header() {
     <header className="site-header">
       <div className="site-header-inner container">
         <h1 className="brand">
-          <Image src={logo} alt="Tree4Five" width={40} height={40} className="logo" />
+          <img src="/tree4fivelogo.png" alt="Tree4Five" className="logo" />
           <span className="brand-text">Rental Platform</span>
         </h1>
         <nav className="nav">

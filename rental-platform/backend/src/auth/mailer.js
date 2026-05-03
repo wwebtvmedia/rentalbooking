@@ -3,10 +3,36 @@ import { logger } from '../logger.js';
 import MagicToken from '../models/MagicToken.js';
 import { blindIndex, normalizeEmail } from '../lib/encryption.js';
 
+function boolEnv(name, fallback = false) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
+function createSmtpOptionsFromEnv() {
+  if (process.env.SMTP_URL) return process.env.SMTP_URL;
+  if (!process.env.SMTP_HOST) return null;
+
+  const port = Number(process.env.SMTP_PORT || 587);
+  return {
+    host: process.env.SMTP_HOST,
+    port: Number.isFinite(port) ? port : 587,
+    secure: boolEnv('SMTP_SECURE', port === 465),
+    auth: process.env.SMTP_USER
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
+      : undefined,
+  };
+}
+
 const createTransport = async () => {
-  if (process.env.SMTP_URL) {
-    logger.info('MAIL_INIT: Using SMTP URL from environment');
-    return nodemailer.createTransport({ url: process.env.SMTP_URL });
+  const smtpOptions = createSmtpOptionsFromEnv();
+  if (smtpOptions) {
+    logger.info('MAIL_INIT: Using SMTP configuration from environment');
+    return nodemailer.createTransport(smtpOptions);
+  }
+
+  if (process.env.NODE_ENV === 'production' && !boolEnv('ALLOW_ETHEREAL_IN_PRODUCTION')) {
+    throw new Error('SMTP is not configured. Set SMTP_URL or SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS to send account emails.');
   }
 
   try {
@@ -38,10 +64,38 @@ const createTransport = async () => {
 };
 
 let transport;
+let transportInitPromise;
 const initTransport = async () => {
-  transport = await createTransport();
+  if (!transportInitPromise) {
+    transportInitPromise = createTransport().then((created) => {
+      transport = created;
+      return created;
+    }).catch((err) => {
+      transportInitPromise = null;
+      throw err;
+    });
+  }
+  return transportInitPromise;
 };
-initTransport();
+
+if (process.env.NODE_ENV !== 'test') {
+  initTransport().catch((err) => logger.error({ err: err.message }, 'MAIL_INIT: Failed'));
+}
+
+export async function assertCanSendMagicLink(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const emailHash = blindIndex(normalizedEmail);
+  const recentTokensCount = await MagicToken.countDocuments({
+    emailHash,
+    expiresAt: { $gt: new Date() }
+  });
+
+  if (recentTokensCount >= 3) {
+    const error = new Error('Too many requests. Please wait a few minutes before trying again.');
+    error.status = 429;
+    throw error;
+  }
+}
 
 export async function sendMagicLink(email, link) {
   const forensicId = Math.random().toString(36).substring(7);
@@ -52,16 +106,6 @@ export async function sendMagicLink(email, link) {
   try {
     if (!transport) await initTransport();
 
-    const recentTokensCount = await MagicToken.countDocuments({
-      emailHash,
-      expiresAt: { $gt: new Date() }
-    });
-
-    if (recentTokensCount >= 3) {
-      logger.warn({ forensicId, emailHash, count: recentTokensCount }, 'MAIL_ABUSE_DETECTED: Rate limit exceeded for this email');
-      throw new Error('Too many requests. Please wait a few minutes before trying again.');
-    }
-
     const result = await transport.sendMail({
       from: process.env.MAIL_FROM || 'no-reply@example.com',
       to: normalizedEmail,
@@ -70,6 +114,7 @@ export async function sendMagicLink(email, link) {
     });
 
     logger.info({ forensicId, emailHash, messageId: result?.messageId || 'N/A' }, 'MAIL_REQUEST_COMPLETED: Magic link successfully dispatched');
+    return result;
   } catch (err) {
     logger.error({ forensicId, emailHash, err: err.message }, 'MAIL_REQUEST_FAILED: Error during email dispatch');
     throw err;

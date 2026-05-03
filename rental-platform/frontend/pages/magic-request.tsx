@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Head from 'next/head';
+import { API_BASE_URL } from '../lib/config';
 import Link from 'next/link';
 
 export default function MagicRequest() {
@@ -10,7 +11,7 @@ export default function MagicRequest() {
   const handleSend = async () => {
     if (!email) return alert('Email required');
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       await axios.post(`${base}/auth/magic`, { email, redirectUrl: window.location.origin + '/magic-callback' });
       setSent(true);
     } catch (err: any) {

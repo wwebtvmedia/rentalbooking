@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
 import { API_BASE_URL, BRAND_NAME, INSTAGRAM_URL, assetUrl } from '../lib/config';
+import { fetchApartments } from '../lib/apartments';
 
 export default function Home() {
   const router = useRouter();
@@ -29,21 +30,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/apartments`);
-        setApartments(res.data);      } catch (err: any) {
-        setApartments([]);
-      } finally {
-        setLoading(false);
-      }
+    const loadApartments = async () => {
+      setApartments(await fetchApartments());
+      setLoading(false);
     };
-    fetch();
+    loadApartments();
   }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem('guest');
-    if (raw) setGuest(JSON.parse(raw));
+    if (raw) {
+      try {
+        setGuest(JSON.parse(raw));
+      } catch {
+        localStorage.removeItem('guest');
+      }
+    }
   }, []);
 
   const saveGuest = (g: any) => {

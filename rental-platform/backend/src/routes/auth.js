@@ -1,12 +1,12 @@
 import express from 'express';
 import { logger } from '../logger.js';
 import { authMiddleware, createToken } from '../auth/index.js';
-import User from '../models/User.js';
 import { v4 as uuidv4 } from 'uuid';
 import MagicToken from '../models/MagicToken.js';
-import { sendMagicLink } from '../auth/mailer.js';
+import { assertCanSendMagicLink, sendMagicLink } from '../auth/mailer.js';
 import jwt from 'jsonwebtoken';
-import { encrypt, decrypt, generateUserKey, blindIndex, protectKey, unprotectKey, normalizeEmail, safeEqual } from '../lib/encryption.js';
+import { blindIndex, normalizeEmail, safeEqual } from '../lib/encryption.js';
+import { findOrCreateUser } from '../auth/users.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -63,30 +63,6 @@ function resolveRequestedRole(role, inviteCode) {
   throw error;
 }
 
-async function findOrCreateUser({ email, fullName, role }) {
-  const normalizedEmail = normalizeEmail(email);
-  const emailHash = blindIndex(normalizedEmail);
-  let user = await User.findOne({ emailHash, role });
-
-  if (!user) {
-    const userKey = generateUserKey();
-    user = await User.create({
-      fullName: encrypt(fullName || 'New Member', userKey),
-      email: encrypt(normalizedEmail, userKey),
-      emailHash,
-      role,
-      userKey: protectKey(userKey)
-    });
-  }
-
-  const realUserKey = unprotectKey(user.userKey);
-  return {
-    user,
-    fullName: decrypt(user.fullName, realUserKey),
-    email: decrypt(user.email, realUserKey)
-  };
-}
-
 router.get('/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   res.json(req.user);
@@ -101,10 +77,10 @@ router.post('/login', async (req, res) => {
     const name = String(req.body?.name || 'New Guest').trim();
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    const { user, fullName, email: userEmail } = await findOrCreateUser({ email, fullName: name, role: 'guest' });
-    const token = createToken({ id: user._id.toString(), name: fullName, email: userEmail, roles: [user.role] });
+    const result = await findOrCreateUser({ email, fullName: name, role: 'guest' });
+    const token = createToken({ id: result.user._id.toString(), name: result.fullName, email: result.email, roles: [result.user.role] });
 
-    res.json({ token, user: { id: user._id, fullName, email: userEmail, role: user.role } });
+    res.json({ token, user: result.public });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -126,6 +102,12 @@ router.post('/magic', async (req, res) => {
     const secret = process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
     if (!secret) return res.status(500).json({ error: 'AUTH_JWT_SECRET or JWT_SECRET not set' });
 
+    await assertCanSendMagicLink(email);
+
+    if (fullName && requestedRole === 'guest') {
+      await findOrCreateUser({ email, fullName, role: 'guest' });
+    }
+
     const jti = uuidv4();
     const token = jwt.sign({ jti, email, requestedRole, purpose: 'magic' }, secret, { expiresIn: '15m' });
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -142,7 +124,13 @@ router.post('/magic', async (req, res) => {
       logger.info({ forensicId, emailHash, token }, 'AUTH_MAGIC_DEBUG: Token generated');
     }
 
-    await sendMagicLink(email, link);
+    try {
+      await sendMagicLink(email, link);
+    } catch (mailErr) {
+      await MagicToken.deleteOne({ jti });
+      throw mailErr;
+    }
+
     logger.info({ forensicId, emailHash }, 'AUTH_MAGIC_REQUEST: Link sent successfully');
     res.json({ ok: true, message: `Magic link sent for ${requestedRole} profile` });
   } catch (err) {
@@ -175,12 +163,12 @@ router.post('/magic/verify', async (req, res) => {
     await mt.save();
 
     const roleToUse = PUBLIC_ROLES.has(payload.requestedRole) ? payload.requestedRole : 'guest';
-    const { user, fullName, email: userEmail } = await findOrCreateUser({ email, fullName: mt.fullName, role: roleToUse });
+    const result = await findOrCreateUser({ email, fullName: mt.fullName, role: roleToUse });
 
-    const sessionToken = createToken({ id: user._id.toString(), name: fullName, email: userEmail, roles: [user.role] }, '14d');
-    logger.info({ forensicId, userId: user._id, role: user.role }, 'AUTH_VERIFY_REQUEST: Successful login');
+    const sessionToken = createToken({ id: result.user._id.toString(), name: result.fullName, email: result.email, roles: [result.user.role] }, '14d');
+    logger.info({ forensicId, userId: result.user._id, role: result.user.role }, 'AUTH_VERIFY_REQUEST: Successful login');
 
-    res.json({ token: sessionToken, user: { id: user._id, fullName, email: userEmail, role: user.role } });
+    res.json({ token: sessionToken, user: result.public });
   } catch (err) {
     logger.error({ forensicId, err: err.message }, 'AUTH_VERIFY_REQUEST: Error');
     res.status(400).json({ error: 'Invalid or expired token' });

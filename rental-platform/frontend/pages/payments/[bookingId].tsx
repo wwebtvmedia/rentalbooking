@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Head from 'next/head';
+import { API_BASE_URL } from '../../lib/config';
 import Link from 'next/link';
 
 export default function PaymentPage() {
@@ -32,7 +33,7 @@ export default function PaymentPage() {
     if (!bookingId) return;
     (async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = API_BASE_URL;
         const res = await axios.get(`${base}/bookings/${bookingId}`, { headers: authHeaders() });
         setBooking(res.data);        
         // Fetch apartment for ethAddress
@@ -53,7 +54,7 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const r = await axios.post(`${base}/payments/create-intent`, { bookingId }, { headers: authHeaders() });
       setClientSecret(r.data.clientSecret || null);
 
@@ -101,7 +102,7 @@ export default function PaymentPage() {
       });
 
       if (hash) {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const base = API_BASE_URL;
         const resp = await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash: hash, currency: 'USDC' }, { headers: authHeaders() });
         alert(resp.data?.message || 'Transaction submitted! Redirecting to calendar...');
         router.push('/calendar');
@@ -117,7 +118,7 @@ export default function PaymentPage() {
     if (!txHash) return alert('Please enter the transaction hash');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       const resp = await axios.post(`${base}/payments/record-crypto-payment`, { bookingId, txHash, currency: 'USDC' }, { headers: authHeaders() });
       alert(resp.data?.message || 'Payment recorded. Redirecting...');
       router.push('/calendar');
@@ -132,7 +133,7 @@ export default function PaymentPage() {
     setError('');
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const base = API_BASE_URL;
       await axios.post(`${base}/payments/${bookingId}/simulate-success`, {}, { headers: authHeaders() });
       alert('Simulated payment success');
       router.push('/calendar');

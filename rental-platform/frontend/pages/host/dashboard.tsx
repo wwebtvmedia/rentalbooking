@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Layout from '../../components/Layout';
+import { API_BASE_URL } from '../../lib/config';
 
 export default function HostDashboard() {
   const [data, setData] = useState<any>(null);
@@ -11,7 +12,7 @@ export default function HostDashboard() {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const base = API_BASE_URL;
         const res = await axios.get(`${base}/admin/host/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
         setData(res.data);
       } catch (err: any) {

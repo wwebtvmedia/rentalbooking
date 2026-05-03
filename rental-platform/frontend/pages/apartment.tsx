@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
-import { assetUrl } from '../lib/config';
+import { BRAND_NAME, assetUrl } from '../lib/config';
+import { fetchApartmentById } from '../lib/apartments';
 
 export default function ApartmentPage() {
   const router = useRouter();
@@ -12,24 +12,22 @@ export default function ApartmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const brandName = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
+  const brandName = BRAND_NAME;
 
   useEffect(() => {
-    if (!id) return;
-    const fetch = async () => {
+    if (!router.isReady) return;
+    const loadApartment = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-        const res = await axios.get(`${base}/apartments/${id}`);
-        setApartment(res.data);
+        setApartment(await fetchApartmentById(id));
+        setError('');
       } catch (err: any) {
-        console.error('API Fetch Error:', err.message);
-        setError(err.response?.data?.error || 'Residence not found in database');
+        setError(err.response?.data?.error || 'Residence not found');
       } finally {
         setLoading(false);
       }
     };
-    fetch();
-  }, [id]);
+    loadApartment();
+  }, [id, router.isReady]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black tracking-[0.4em] uppercase text-[10px]">Refining View...</div>;
   if (error || !apartment) return <div className="min-h-screen flex items-center justify-center text-red-600 font-bold">{error || 'Residence not found'}</div>;

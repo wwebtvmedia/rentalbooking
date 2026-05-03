@@ -18,6 +18,27 @@ function safePublicUser(user) {
   }
 }
 
+async function safeBooking(booking) {
+  const obj = booking.toObject ? booking.toObject() : { ...booking };
+  const owner = booking.userId ? await User.findById(booking.userId) : null;
+  delete obj.emailHash;
+  delete obj.paymentIntentId;
+  if (owner) {
+    try {
+      const key = unprotectKey(owner.userKey);
+      obj.fullName = decrypt(booking.fullName, key);
+      obj.email = decrypt(booking.email, key);
+    } catch {
+      obj.fullName = 'Private guest';
+      obj.email = 'private@example.invalid';
+    }
+  } else {
+    obj.fullName = 'Private guest';
+    obj.email = 'private@example.invalid';
+  }
+  return obj;
+}
+
 router.get('/dashboard', requireRole('host'), async (req, res) => {
   try {
     const hostId = req.user.id;
@@ -60,7 +81,7 @@ router.get('/dashboard', requireRole('host'), async (req, res) => {
         revenue: bookings.filter(b => b.apartmentId === f._id.toString()).reduce((acc, curr) => acc + ((curr.depositAmount || 0) / 100), 0)
       })),
       concierges: concierges.map(safePublicUser),
-      recentBookings: bookings.slice(0, 10)
+      recentBookings: await Promise.all(bookings.slice(0, 10).map(safeBooking))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
