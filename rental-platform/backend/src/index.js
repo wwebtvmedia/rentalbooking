@@ -36,7 +36,16 @@ async function handleMcpMessages(req, res) {
 
 const app = express();
 
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "blob:", "https://images.unsplash.com", "https://*.unsplash.com"],
+      "connect-src": ["'self'", "https://*.google-analytics.com", "https://*.googleapis.com"]
+    },
+  },
+}));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -68,11 +77,17 @@ app.use(cors({
     // Regex match for bestflats.vip subdomains
     if (/^https:\/\/([a-z0-9-]+\.)?bestflats\.vip$/i.test(origin)) return callback(null, true);
     
-    // Local development
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
-        return callback(null, true);
+    // Local development & Private network (allow Pi IP access)
+    if (process.env.NODE_ENV !== 'production') {
+        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$/i.test(origin)) {
+            return callback(null, true);
+        }
     }
     
+    // Fallback: If it matches FRONTEND_ORIGIN roughly (case insensitive)
+    const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
+    if (origin.toLowerCase() === frontendOrigin.toLowerCase()) return callback(null, true);
+
     logger.warn({ origin }, "CORS blocked for origin");
     return callback(new Error("Not allowed by CORS"));
   },

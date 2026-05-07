@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import Media from '../models/Media.js';
 import { authMiddleware, requireRole } from '../auth/index.js';
@@ -37,14 +38,52 @@ function publicUploadUrl(req, filename) {
 router.get('/:filename', async (req, res) => {
   try {
     const filename = path.basename(req.params.filename || '');
+    
+    // 1. Try to find in MongoDB
     const media = await Media.findOne({ filename });
-    if (!media) return res.status(404).send('Not found');
+    if (media) {
+      res.set('Content-Type', media.contentType);
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      return res.send(media.data);
+    }
 
-    res.set('Content-Type', media.contentType);
-    res.set('Cache-Control', 'public, max-age=31536000, immutable');
-    res.set('X-Content-Type-Options', 'nosniff');
-    res.send(media.data);
+    // 2. Fallback: Try to find on filesystem (e.g. for development or if seed not run)
+    const possiblePaths = [
+      path.join(process.cwd(), 'uploads', filename),
+      path.join(process.cwd(), 'uploads/appartement', filename),
+    ];
+    
+    // Handle cases where frontend might have prefixed the name or added spaces
+    const decodedFilename = decodeURIComponent(filename);
+    if (decodedFilename !== filename) {
+        possiblePaths.push(path.join(process.cwd(), 'uploads/appartement', decodedFilename));
+    }
+
+    for (const filePath of possiblePaths) {
+      if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        let contentType = 'application/octet-stream';
+        if (ext === '.avif') contentType = 'image/avif';
+        else if (ext === '.webp') contentType = 'image/webp';
+        else if (ext === '.png') contentType = 'image/png';
+        else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+        else if (ext === '.svg') contentType = 'image/svg+xml';
+
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        return res.sendFile(path.resolve(filePath));
+      }
+    }
+
+    // 3. Last resort: Return a 404 but as a proper image or at least non-blocked response
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.status(404).send('Resource not found');
   } catch (err) {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     res.status(500).json({ error: err.message });
   }
 });
