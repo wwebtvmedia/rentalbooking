@@ -3,4 +3,5 @@ module.exports = {
   testTimeout: 30000,
   verbose: true,
   testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.test.mjs', '**/tests/**/*.test.cjs'],
+  transform: {},
 };

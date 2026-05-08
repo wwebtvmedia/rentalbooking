@@ -104,6 +104,9 @@ export async function sendMagicLink(email, link) {
   logger.info({ forensicId, emailHash }, 'MAIL_REQUEST_RECEIVED: Starting send process');
 
   try {
+    // Enforce rate limit before sending (defense in depth)
+    await assertCanSendMagicLink(normalizedEmail);
+
     if (!transport) await initTransport();
 
     const result = await transport.sendMail({

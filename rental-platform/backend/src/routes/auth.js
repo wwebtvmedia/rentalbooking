@@ -102,6 +102,8 @@ router.post('/magic', async (req, res) => {
     const secret = process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
     if (!secret) return res.status(500).json({ error: 'AUTH_JWT_SECRET or JWT_SECRET not set' });
 
+    // Rate limit check is now also enforced inside sendMagicLink() for defense in depth.
+    // We keep the early check here to fail fast before creating the token.
     await assertCanSendMagicLink(email);
 
     if (fullName && requestedRole === 'guest') {
