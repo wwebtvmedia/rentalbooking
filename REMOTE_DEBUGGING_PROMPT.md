@@ -13,7 +13,11 @@ Watch the server's brain while you click buttons in the UI:
 ```
 
 ### 2. Instant Email/Magic Link Retrieval
-If you don't receive an email, run this to get the login link directly from the local trap:
+If you don't receive an email, you can use the **Mail Webserver Dashboard** directly in your browser:
+*   **Local Network:** `http://<your-pi-ip>:8025`
+*   **Via Cloudflare:** Map `mail.bestflats.vip` to `http://localhost:8025` in your Tunnel settings.
+
+Alternatively, run this on the Pi to get the link in the terminal:
 ```bash
 ./check_emails.sh
 ```
