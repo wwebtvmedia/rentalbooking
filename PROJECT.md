@@ -57,4 +57,4 @@ This document describes the structure, functionality, and localization of all co
 4. **Access:** Role-based access control (RBAC) enforced via JWT sub-claims and backend middleware.
 
 ## 🚀 Deployment Strategy
-The project is optimized for **Podman** on **Raspberry Pi 4**. It automatically moves heavy storage (MongoDB and Container Layers) to the external USB disk found at `/media/benyedde/rootfs` to prevent SD card failure.
+The project is optimized for **Podman** on **Raspberry Pi 4**. It automatically moves heavy storage (MongoDB and Container Layers) to the external USB disk found at `/media/benyedde/rootfs` to prevent SD card failure. The system is fully autonomous, utilizing an integrated mail webserver to handle authentication without external SMTP dependencies.
