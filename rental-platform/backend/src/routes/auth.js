@@ -120,7 +120,7 @@ router.post('/magic', async (req, res) => {
       return res.json({ ok: true, token });
     }
 
-    if (process.env.AUTH_LOG_EMAIL_TOKEN === 'true' && process.env.NODE_ENV !== 'production') {
+    if (process.env.AUTH_LOG_EMAIL_TOKEN === 'true') {
       logger.info({ forensicId, emailHash, token }, 'AUTH_MAGIC_DEBUG: Token generated');
     }
 

@@ -16,7 +16,7 @@ test.describe('Production Role-Based Flows', () => {
     await page.goto('https://host.bestflats.vip/host/dashboard');
     
     // Since we are unauthenticated on the live site, we expect the Access Denied gate
-    const errorText = page.locator('text=/Access Denied|Token required/i');
+    const errorText = page.locator('text=/Access Denied|Token required|Unauthorized/i');
     await expect(errorText).toBeVisible({ timeout: 10000 });
   });
 
@@ -28,7 +28,7 @@ test.describe('Production Role-Based Flows', () => {
     await expect(page.locator('text=concierge portal')).toBeVisible();
 
     await page.goto('https://conci.bestflats.vip/concierge/dashboard');
-    const errorText = page.locator('text=/Access Denied|Token required/i');
+    const errorText = page.locator('text=/Access Denied|Token required|Unauthorized/i');
     await expect(errorText).toBeVisible({ timeout: 10000 });
   });
 

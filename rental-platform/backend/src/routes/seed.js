@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import Apartment from '../models/Apartment.js';
 import Media from '../models/Media.js';
+import UniversalCommerce from '../models/UniversalCommerce.js';
 import { logger } from '../logger.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
 
@@ -99,22 +100,42 @@ async function seedMedia() {
     }
 }
 
+async function runSeed(force = false) {
+  await seedMedia();
+  if (force) {
+    await Apartment.deleteMany({});
+    await UniversalCommerce.deleteMany({});
+    logger.info('Cleared existing inventory due to force=true');
+  } else {
+    const count = await Apartment.countDocuments();
+    if (count > 0) return { message: 'Database already has apartments.', skip: true };
+  }
+
+  const created = await Apartment.insertMany(apartments);
+  
+  // Register each apartment for UCP
+  const ucpRecords = created.map(apt => ({
+    itemId: apt._id,
+    ucpMetadata: {
+      capabilityHash: 'rental-listing-v1',
+      isAgenticEnabled: true,
+    },
+    dynamicPricing: {
+      baseRate: apt.pricePerNight,
+      currency: 'USDC',
+    }
+  }));
+  await UniversalCommerce.insertMany(ucpRecords);
+
+  logger.info('Database seeded with sample apartments and UCP records');
+  return { message: 'Seeded successfully', count: created.length };
+}
+
 router.post('/', requireRole('admin'), async (req, res) => {
   try {
-    await seedMedia();
-    if (req.query.force === 'true') {
-      await Apartment.deleteMany({});
-      logger.info('Cleared existing apartments due to force=true');
-    } else {
-      const count = await Apartment.countDocuments();
-      if (count > 0) {
-        return res.json({ message: 'Database already has apartments. Use ?force=true to seed anyway.' });
-      }
-    }
-
-    await Apartment.insertMany(apartments);
-    logger.info('Database seeded with sample apartments');
-    res.json({ message: 'Seeded successfully', count: apartments.length });
+    const result = await runSeed(req.query.force === 'true');
+    if (result.skip) return res.json(result);
+    res.json(result);
   } catch (err) {
     logger.error({ err }, 'Seeding failed');
     res.status(500).json({ error: err.message });
@@ -132,15 +153,8 @@ router.get('/unprotected', async (req, res) => {
   }
 
   try {
-    await seedMedia();
-    const count = await Apartment.countDocuments();
-    if (count > 0 && req.query.force !== 'true') {
-      return res.json({ message: 'Database already has apartments.' });
-    }
-    if (req.query.force === 'true') await Apartment.deleteMany({});
-
-    await Apartment.insertMany(apartments);
-    res.json({ message: 'Seeded successfully', count: apartments.length });
+    const result = await runSeed(req.query.force === 'true');
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
