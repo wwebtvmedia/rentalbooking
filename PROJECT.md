@@ -18,6 +18,8 @@ This document describes the structure, functionality, and localization of all co
 | :--- | :--- |
 | `start.sh` | Unified deployment script (Builds, starts, and seeds). |
 | `clean.sh` | Stops all containers and wipes transient stack data. |
+| `check_emails.sh` | Retrieves magic links from local Mailpit (for Pi debugging). |
+| `check_logs.sh` | Monitors real-time backend and email logs. |
 | `prod.sh` | Interactive environment initializer for production domains. |
 | `ReadmeAdmin.txt` | Master guide for Cloudflare, Security, and Dashboards. |
 | `PROJECT.md` | This file. Technical architecture and logic map. |
