@@ -1,6 +1,12 @@
 #!/bin/bash
 # check_emails.sh - Retrieve magic links from local Mailpit
 
+# Check for jq dependency
+if ! command -v jq >/dev/null 2>&1; then
+    echo "❌ Error: 'jq' is not installed. Please install it with: sudo apt install jq"
+    exit 1
+fi
+
 echo "📬 Checking local Mailpit for recent Magic Links..."
 
 # Mailpit API is available on localhost:8025
