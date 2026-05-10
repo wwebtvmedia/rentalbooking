@@ -33,9 +33,9 @@ npx playwright test --config=playwright.prod.config.ts
 
 ## 📧 Resolving "Email Not Sent" Issue
 
-The platform is currently using **Mailpit** (local capture). To receive real emails:
+The platform uses **SendGrid** for production email delivery. Verify the following in your `.env`:
 
-1. **Update .env:** Edit your `.env` and replace `SMTP_URL=smtp://mailpit:1025` with real SMTP settings (SendGrid, Gmail, etc.).
+1. **Check SMTP settings:** Ensure `SMTP_HOST=smtp.sendgrid.net`, `SMTP_PORT=587`, `SMTP_USER=apikey`, and `SMTP_PASS` is set to your real SendGrid API key.
 2. **Apply Changes:** Run `./start.sh` on the Pi.
 3. **Verify:** Use `./check_logs.sh` to confirm the dispatch was successful.
 

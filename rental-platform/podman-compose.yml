@@ -14,22 +14,13 @@ services:
     container_name: backend
     restart: always
     environment:
-      - SMTP_URL=${SMTP_URL:-smtp://mailpit:1025}
-      - MAIL_FROM=${MAIL_FROM:-no-reply@bestflats.vip}
+      # SMTP is configured via .env file (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)
+      - MAIL_FROM=${MAIL_FROM:-concierge@bestflats.vip}
     env_file: .env
     ports:
       - "4000:4000"
     depends_on:
       - mongo
-      - mailpit
-
-  mailpit:
-    image: docker.io/axllent/mailpit
-    container_name: mailpit
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "8025:8025"
-    restart: always
 
   frontend:
     build:
