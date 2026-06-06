@@ -65,17 +65,42 @@ echo "🏗️  Building and starting services... (commit $GIT_COMMIT)"
 
 # 4. Final verification steps... (renumbering)
 
-# 5. Wait for Backend and Seed Database
+# 5. Wait for the backend PROCESS to come up — bounded, never an infinite loop.
+# Probe /version (no DB, not the rate-limited DB endpoints) so a database problem
+# can't turn this into a forever-wait that hammers the API into a 429.
 echo "⏳ Waiting for backend to be ready..."
-until $(curl --output /dev/null --silent --head --fail http://localhost:4000/calendar/events); do
-    printf '.'
-    sleep 2
+READY=false
+for _ in $(seq 1 40); do
+    if curl --output /dev/null --silent --fail --max-time 5 http://localhost:4000/version; then
+        READY=true; break
+    fi
+    printf '.'; sleep 3
 done
+echo
+if [ "$READY" != true ]; then
+    echo "⚠️  Backend did not answer /version after ~2 min. Check logs:"
+    echo "    cd rental-platform && podman-compose logs --tail=80 backend"
+    exit 1
+fi
+echo "✅ Backend process is up."
 
-echo -e "\n🌱 Seeding database with initial apartments..."
-# Load admin key from .env
+# 5b. Verify the database is actually queryable. A non-200 here means the backend is
+# running but cannot talk to MongoDB — almost always MONGO_URI missing auth creds.
+DB_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://localhost:4000/apartments || echo 000)
+if [ "$DB_CODE" != "200" ]; then
+    echo "⚠️  Backend is up but database queries return HTTP $DB_CODE (skipping seed)."
+    echo "    Most likely MONGO_URI is missing auth credentials. In the root .env set e.g.:"
+    echo "      MONGO_URI=mongodb://<user>:<pass>@mongo:27017/bestflats?authSource=admin"
+    echo "    then restart: (cd rental-platform && podman-compose up -d backend)"
+    echo "    (.env is operator-managed — fix it by hand; scripts never edit it.)"
+    exit 1
+fi
+
+# 6. Seed the database with initial apartments (best-effort).
+echo "🌱 Seeding database with initial apartments..."
 ADMIN_KEY=$(grep PLATFORM_ADMIN_KEY .env | cut -d '=' -f2-)
-curl -X GET -H "x-platform-admin-key: $ADMIN_KEY" "http://localhost:4000/seed/unprotected?force=true"
+curl -X GET -H "x-platform-admin-key: $ADMIN_KEY" "http://localhost:4000/seed/unprotected?force=true" || true
+echo
 
 echo "
 ✨ DEPLOYMENT COMPLETE! ✨
