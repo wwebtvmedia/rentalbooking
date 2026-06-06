@@ -183,6 +183,25 @@ curl -X POST -H "Content-Type: application/json" -d '{"token":"<MAGIC_TOKEN>"}' 
 
 ---
 
+## 🗄️ Database protection & resilience
+
+- **Backups:** `rental-platform/scripts/backup_mongo.sh` dumps MongoDB to rotated gzip
+  archives (cron-ready) and, with `RCLONE_REMOTE` set, copies them **off-site via rclone**.
+  Restore with `mongorestore --archive --gzip --drop`.
+- **MongoDB auth:** set `MONGO_ROOT_USERNAME` / `MONGO_ROOT_PASSWORD` in `.env` and use a
+  credentialed `MONGO_URI` (`mongodb://user:pass@mongo:27017/bestflats?authSource=admin`).
+  Fresh installs enable auth automatically; for an existing DB run
+  `CONFIRM=yes bash rental-platform/scripts/enable_mongo_auth.sh`. Mongo is never published
+  on the host (internal compose network only).
+- **Health:** `GET /health` → `200 {status:"ok"}` when the DB is connected, else `503`.
+  Point an uptime monitor at `https://api.bestflats.vip/health`.
+- **Process resilience:** unhandled rejections are logged; a fatal exception logs and exits
+  so Podman's `restart: always` brings a clean instance back. Mongo connect uses retry/backoff.
+
+See **USER_MANUAL.md §13** for full setup (rclone, auth migration, cron).
+
+---
+
 ## 🌐 API Overview
 
 Base: `http://localhost:4000`
@@ -204,6 +223,12 @@ Main endpoints:
 
 - GET /customers?email=... — lookup
 - POST /customers — create guest (public, idempotent by email)
+
+- GET /version — running build (commit, version, builtAt)
+- GET /health — DB connectivity (200 ok / 503 degraded)
+- GET /apartments — Book Now list (hides `pending` flats from the public; admins see all)
+- POST /admin/host/flats — host self-service: submit a flat → `pending`, emails admin a validation link
+- GET /admin/host/flats/validate?token=... — admin approves a pending flat → `published`
 
 Examples (curl):
 
@@ -270,10 +295,14 @@ CI recommendation: run the above steps on push/PR (see below for a full workflow
 
 Use a `.env` file or set these in environment:
 
-- MONGO_URI (default for compose uses internal mongo)
+- MONGO_URI (default for compose uses internal mongo; add `user:pass@` + `?authSource=admin` when auth is on)
+- MONGO_ROOT_USERNAME / MONGO_ROOT_PASSWORD (enable MongoDB auth; empty = no auth)
 - PORT (defaults: backend 4000, frontend 3000)
 - FRONTEND_ORIGIN (for CORS)
 - AUTH_JWT_SECRET or JWT_SECRET (required for signing and validating JWTs)
+- MASTER_ENCRYPTION_KEY (per-user field encryption), PLATFORM_ADMIN_KEY (seed endpoint)
+- ADMIN_EMAIL (recipient of host-flat validation emails; falls back to MAIL_FROM)
+- GIT_COMMIT / BUILD_TIME (baked at image build; surfaced by GET /version)
 
 There is a `.env.example` with suggested variables in the repository.
 

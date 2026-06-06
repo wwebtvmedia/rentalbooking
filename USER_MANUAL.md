@@ -358,6 +358,32 @@ back up. MongoDB connection uses retry-with-backoff (`connectWithRetry`).
 all requests are rate-limited (100 / 15 min per IP); per-user fields are AES-256-GCM encrypted;
 admin routes require a signed JWT; the admin dashboard adds a captcha after 3 failed sign-ins.
 
-**Recommended hardening (not yet automated):** off-Pi backup copy (e.g. `rclone` the archives
-to remote storage), and a MongoDB user/password (`MONGO_INITDB_*`) instead of the open internal
-connection.
+**Off-site backups (rclone).** `backup_mongo.sh` copies each archive to a remote when
+`RCLONE_REMOTE` is set (and prunes the remote by age). One-time setup on the Pi:
+```bash
+sudo apt install rclone          # or: curl https://rclone.org/install.sh | sudo bash
+rclone config                    # create a remote, e.g. name it "gdrive"
+# then run backups with: RCLONE_REMOTE=gdrive:bfs-backups bash rental-platform/scripts/backup_mongo.sh
+```
+
+**MongoDB username/password.** The compose `mongo` service reads `MONGO_ROOT_USERNAME` /
+`MONGO_ROOT_PASSWORD` from `.env`. Empty (default) = no auth (legacy). Set them to enable a
+root user + access control.
+
+- *Fresh install:* set the two vars **and** `MONGO_URI` in `.env` before first start — the
+  image creates the user and enables auth automatically.
+  ```
+  MONGO_ROOT_USERNAME=bfs
+  MONGO_ROOT_PASSWORD=<strong-random>
+  MONGO_URI=mongodb://bfs:<strong-random>@mongo:27017/bestflats?authSource=admin
+  ```
+- *Existing database (migration):* the image only auto-creates the user on an empty data dir,
+  so run the guarded helper on the Pi (it backs up, re-initialises with auth, and restores):
+  ```bash
+  # add the three lines above to .env first, then:
+  CONFIRM=yes bash rental-platform/scripts/enable_mongo_auth.sh
+  (cd rental-platform && podman-compose up -d backend)
+  curl -s https://api.bestflats.vip/health    # {"status":"ok","db":"connected"}
+  ```
+  `backup_mongo.sh` and `mongorestore` also accept the credentials (auto-detected from
+  `MONGO_ROOT_USERNAME`/`PASSWORD`).

@@ -3,6 +3,13 @@ services:
     image: docker.io/library/mongo:4.4.18
     container_name: mongo
     restart: always
+    # If MONGO_ROOT_USERNAME/PASSWORD are set in .env, the official image creates this
+    # root user and enables access control AUTOMATICALLY on a *fresh* data dir. Left empty,
+    # Mongo runs without auth (legacy behaviour) — safe default so nothing breaks until you
+    # opt in. For an existing data dir, see the migration in USER_MANUAL §13.
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-}
     volumes:
       - ${MONGO_DATA_DIR:-./data/mongo}:/data/db:z
     # Do not expose MongoDB on the host in production. Backend reaches it over the internal compose network.
