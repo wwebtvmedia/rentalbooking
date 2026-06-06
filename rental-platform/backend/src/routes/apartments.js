@@ -62,7 +62,10 @@ export async function buildPayload(body, existing = {}) {
 
 router.get('/', async (req, res) => {
   try {
-    const list = await Apartment.find().sort({ name: 1 });
+    // Public Book Now list hides flats pending admin validation; admins see everything.
+    const isAdmin = Array.isArray(req.user?.roles) && req.user.roles.includes('admin');
+    const filter = isAdmin ? {} : { status: { $ne: 'pending' } };
+    const list = await Apartment.find(filter).sort({ name: 1 });
     res.json(list);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -97,6 +97,41 @@ export async function assertCanSendMagicLink(email) {
   }
 }
 
+export async function sendFlatValidationEmail(flat, validateUrl) {
+  const to = process.env.ADMIN_EMAIL || process.env.MAIL_FROM || 'admin@bestflats.vip';
+  try {
+    if (!transport) await initTransport();
+    const result = await transport.sendMail({
+      from: process.env.MAIL_FROM || 'no-reply@example.com',
+      to,
+      subject: `New flat awaiting validation: ${flat.name}`,
+      text:
+        `A host submitted a new flat for publication.\n\n` +
+        `Name: ${flat.name}\n` +
+        `Address: ${flat.address || '(none)'}\n` +
+        `Price/night: ${flat.pricePerNight}\n` +
+        `Photos: ${(flat.photos || []).length}\n\n` +
+        `Approve and publish it on Book Now:\n${validateUrl}\n\n` +
+        `If you do not recognise this submission, ignore this email and it stays hidden.`,
+      html:
+        `<p>A host submitted a new flat for publication.</p>` +
+        `<ul><li><b>Name:</b> ${flat.name}</li>` +
+        `<li><b>Address:</b> ${flat.address || '(none)'}</li>` +
+        `<li><b>Price/night:</b> ${flat.pricePerNight}</li>` +
+        `<li><b>Photos:</b> ${(flat.photos || []).length}</li></ul>` +
+        `<p><a href="${validateUrl}" style="display:inline-block;padding:10px 18px;` +
+        `background:#b8860b;color:#fff;text-decoration:none;border-radius:6px">` +
+        `✓ Approve &amp; publish</a></p>` +
+        `<p style="color:#888;font-size:12px">If you do not recognise this submission, ignore this email and it stays hidden.</p>`
+    });
+    logger.info({ to, flatId: String(flat._id), messageId: result?.messageId || 'N/A' }, 'FLAT_VALIDATION_EMAIL: sent');
+    return result;
+  } catch (err) {
+    logger.error({ err: err.message, flatId: String(flat._id) }, 'FLAT_VALIDATION_EMAIL: failed');
+    throw err;
+  }
+}
+
 export async function sendMagicLink(email, link) {
   const forensicId = Math.random().toString(36).substring(7);
   const normalizedEmail = normalizeEmail(email);

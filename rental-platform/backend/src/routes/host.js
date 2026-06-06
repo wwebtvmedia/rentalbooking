@@ -6,24 +6,76 @@ import { requireRole, authMiddleware } from '../auth/index.js';
 import { decrypt, unprotectKey } from '../lib/encryption.js';
 import { buildPayload } from './apartments.js';
 import { validate, apartmentSchema } from '../lib/validation.js';
+import { sendFlatValidationEmail } from '../auth/mailer.js';
+import { logger } from '../logger.js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 router.use(authMiddleware);
 
+function jwtSecret() {
+  return process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET;
+}
+
+function buildValidateUrl(req, flatId) {
+  const token = jwt.sign({ flatId: String(flatId), purpose: 'flat-validation' }, jwtSecret(), { expiresIn: '7d' });
+  const base = process.env.BACKEND_ORIGIN
+    ? process.env.BACKEND_ORIGIN.replace(/\/$/, '')
+    : `${String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || req.protocol}://${req.get('host')}`;
+  return `${base}/admin/host/flats/validate?token=${encodeURIComponent(token)}`;
+}
+
+// Public: an admin clicks the emailed link to approve a pending flat and publish it.
+// Token-protected (signed), so it needs no logged-in session — works straight from email.
+router.get('/flats/validate', async (req, res) => {
+  try {
+    const payload = jwt.verify(String(req.query.token || ''), jwtSecret());
+    if (payload.purpose !== 'flat-validation' || !payload.flatId) {
+      return res.status(400).send('<h1>Invalid validation link</h1>');
+    }
+    const apt = await Apartment.findById(payload.flatId);
+    if (!apt) return res.status(404).send('<h1>Flat not found</h1>');
+    if (apt.status === 'published') {
+      return res.status(200).send(`<h1>Already published</h1><p>${apt.name} is already live on Book Now.</p>`);
+    }
+    apt.status = 'published';
+    await apt.save();
+    logger.info({ flatId: String(apt._id) }, 'FLAT_VALIDATION: published by admin link');
+    res.status(200).send(`<h1>✓ Published</h1><p>"${apt.name}" is now live on Book Now.</p>`);
+  } catch (err) {
+    res.status(400).send('<h1>Invalid or expired validation link</h1>');
+  }
+});
+
 // Host self-service: a host customer proposes a new flat (owned by themselves).
-// Ownership is forced to the authenticated host, ignoring any hostId in the body.
+// The flat is created as 'pending' (hidden from the public list) and an admin is
+// emailed a validation link to approve and publish it. Ownership is forced to the host.
 router.post('/flats', requireRole('host'), validate(apartmentSchema), async (req, res) => {
   try {
     const payload = await buildPayload(req.body);
     payload.hostId = req.user.id;
+    payload.status = 'pending';
     const apt = await Apartment.create(payload);
-    res.status(201).json(apt);
+
+    // Email the admin a validation link (best-effort: do not fail the submission if mail fails).
+    try {
+      await sendFlatValidationEmail(apt, buildValidateUrl(req, apt._id));
+    } catch (mailErr) {
+      logger.error({ err: mailErr.message, flatId: String(apt._id) }, 'FLAT_SUBMIT: validation email failed');
+    }
+
+    res.status(201).json({
+      ok: true,
+      status: 'pending',
+      message: 'Flat submitted. An admin must approve it via the emailed link before it appears on Book Now.',
+      flat: apt
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Host self-service: list the flats I own.
+// Host self-service: list the flats I own (including pending ones awaiting approval).
 router.get('/flats', requireRole('host'), async (req, res) => {
   try {
     const flats = await Apartment.find({ hostId: req.user.id }).sort({ name: 1 });

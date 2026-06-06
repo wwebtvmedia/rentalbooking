@@ -17,7 +17,10 @@ const ApartmentSchema = new mongoose.Schema({
   ethAddress: { type: String },
   // Owner and Service Staff
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  assignedConciergeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  assignedConciergeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // Moderation: host-submitted flats start 'pending' and are hidden from the public
+  // Book Now list until an admin approves them via the emailed validation link.
+  status: { type: String, enum: ['pending', 'published'], default: 'published' }
 }, { timestamps: true });
 
 export default mongoose.model('Apartment', ApartmentSchema);

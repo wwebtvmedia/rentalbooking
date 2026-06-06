@@ -214,7 +214,7 @@ describe('E2E non-regression tests', () => {
     expect(found).toBe(true);
   });
 
-  test('host self-service: a host can propose their own flat and upload photos', async () => {
+  test('host self-service + moderation: submit -> pending -> admin validates -> published', async () => {
     const jwt = require('jsonwebtoken');
     const hostId = new mongoose.Types.ObjectId().toString();
     const hostToken = jwt.sign(
@@ -227,21 +227,38 @@ describe('E2E non-regression tests', () => {
     const up = await request.post('/uploads').set('Authorization', `Bearer ${hostToken}`).send({ filename: 'h.png', b64: pngB64 }).expect(200);
     expect(up.body.url).toBeTruthy();
 
-    // A guest cannot publish a flat.
+    // A guest cannot submit a flat.
     await request.post('/admin/host/flats').set('Authorization', `Bearer ${bobToken}`).send({ name: 'Nope', pricePerNight: 50 }).expect(403);
 
-    // The host can, and ownership is forced to the authenticated host (body hostId ignored).
+    // The host submits -> created as pending, ownership forced to the host (body hostId ignored).
     const res = await request.post('/admin/host/flats').set('Authorization', `Bearer ${hostToken}`)
       .send({ name: 'Host Self Flat', address: 'Le Bardo', pricePerNight: 80, photos: [up.body.url], hostId: 'deadbeefdeadbeefdeadbeef', lat: 36.8, lon: 10.1 })
       .expect(201);
-    expect(res.body._id).toBeTruthy();
-    expect(res.body.hostId).toBe(hostId);
+    expect(res.body.status).toBe('pending');
+    const flat = res.body.flat;
+    expect(flat._id).toBeTruthy();
+    expect(flat.hostId).toBe(hostId);
+    expect(flat.status).toBe('pending');
 
-    // It shows up in the host's own flats and the host dashboard.
+    // Pending flat is hidden from the public Book Now list...
+    const pub1 = await request.get('/apartments').expect(200);
+    expect(pub1.body.some(a => a._id === flat._id)).toBe(false);
+    // ...but an admin sees it, and so does the owning host.
+    const adminView = await request.get('/apartments').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(adminView.body.some(a => a._id === flat._id)).toBe(true);
     const mine = await request.get('/admin/host/flats').set('Authorization', `Bearer ${hostToken}`).expect(200);
-    expect(mine.body.some(f => f._id === res.body._id)).toBe(true);
-    const dash = await request.get('/admin/host/dashboard').set('Authorization', `Bearer ${hostToken}`).expect(200);
-    expect(dash.body.flats.some(f => f.id === res.body._id)).toBe(true);
+    expect(mine.body.some(f => f._id === flat._id)).toBe(true);
+
+    // An invalid validation token is rejected.
+    await request.get('/admin/host/flats/validate?token=not-a-token').expect(400);
+
+    // The admin clicks the emailed validation link (token-protected, no session needed).
+    const validateToken = jwt.sign({ flatId: flat._id, purpose: 'flat-validation' }, process.env.AUTH_JWT_SECRET, { expiresIn: '7d' });
+    await request.get(`/admin/host/flats/validate?token=${encodeURIComponent(validateToken)}`).expect(200);
+
+    // Now it is published and visible on the public Book Now list.
+    const pub2 = await request.get('/apartments').expect(200);
+    expect(pub2.body.some(a => a._id === flat._id)).toBe(true);
   });
 
   test('REGRESSION: uploads emit https URLs behind a proxy (no mixed content)', async () => {
