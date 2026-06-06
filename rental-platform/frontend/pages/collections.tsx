@@ -32,6 +32,11 @@ export default function CollectionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
               {[1, 2, 3].map((i) => <div key={i} className="aspect-[4/5] bg-gray-100 rounded-2xl animate-pulse" />)}
             </div>
+          ) : apartments.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="text-2xl font-black mb-3">No residences available yet.</p>
+              <p className="text-gray-500">New properties are being curated — please check back soon.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
               {apartments.map((apt) => (
