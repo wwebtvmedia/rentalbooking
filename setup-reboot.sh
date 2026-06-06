@@ -6,11 +6,10 @@ cd "$(dirname "$0")"
 
 echo "🔄 Starting Rental Platform Services..."
 
-# 1. Basic environment check
+# 1. Basic environment check — .env is operator-managed and never created by scripts.
 if [ ! -f .env ]; then
-    echo "⚠️  No .env file found. Running start.sh to initialize..."
-    ./start.sh
-    exit 0
+    echo "❌ No .env file found. Create it manually (see rental-platform/.env.example) and re-run." >&2
+    exit 1
 fi
 
 # 2. Ensure Podman is responsive

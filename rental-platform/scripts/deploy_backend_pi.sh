@@ -19,21 +19,18 @@ fi
 
 cd "$APP_DIR" || exit 1
 
-# Create environment file from example
-echo "Creating .env file..."
-if [ -f ".env.example" ]; then
-  cp .env.example .env
-else
-  echo "Warning: .env.example not found. Creating a default .env file."
+# Environment file — .env is the operator-managed source of truth.
+# This script NEVER creates, edits or deletes it (appending here previously clobbered
+# a configured MONGO_URI and took the backend down). It only requires .env to exist,
+# with MONGO_URI, AUTH_JWT_SECRET, MASTER_ENCRYPTION_KEY, FRONTEND_ORIGIN and
+# NEXT_PUBLIC_BACKEND_URL already set correctly for this host.
+echo "Checking .env ..."
+if [ ! -f ".env" ]; then
+  echo "ERROR: .env not found in $APP_DIR. Create it manually (see rental-platform/.env.example)" >&2
+  echo "       before running this deploy. This script will not generate or modify .env." >&2
+  exit 1
 fi
-
-# Update .env with secure and correct values
-# Note: For a real deployment, these origins/URLs should point to the public IPs or domains.
-echo "MONGO_URI=mongodb://mongo:27017/rental-platform" >> .env
-echo "PORT=4000" >> .env
-echo "AUTH_JWT_SECRET=$(openssl rand -base64 32)" >> .env
-echo "FRONTEND_ORIGIN=http://localhost:3000" >> .env
-echo "NEXT_PUBLIC_BACKEND_URL=http://localhost:4000" >> .env
+echo ".env present — left untouched."
 
 # --- Deployment ---
 echo "Building and starting services with Podman Compose..."

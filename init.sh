@@ -13,6 +13,18 @@ else
     echo "💻 PC/Server ($ARCH) detected. Skipping hardware-specific mounts."
 fi
 
+# --- Required configuration: .env (READ-ONLY CHECK) ---
+# `.env` is the ONLY file required to bring the platform back up after ./clean.sh
+# (clean.sh preserves it). It is the operator-managed source of truth — this script
+# NEVER creates, edits or deletes it; it only verifies it exists.
+if [ -f ".env" ]; then
+    echo "✅ .env present (required configuration found) — left untouched."
+else
+    echo "❌ .env not found at repo root. Create it manually (see rental-platform/.env.example)" >&2
+    echo "   then re-run ./init.sh. This script will not generate or modify .env." >&2
+    exit 1
+fi
+
 # --- CRITICAL: Fix Raspberry Pi Storage FIRST (so Podman can run) ---
 if [ "$IS_PI" = true ]; then
     echo "💾 Preparing Raspberry Pi Storage..."

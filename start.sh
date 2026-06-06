@@ -39,31 +39,21 @@ fi
 command -v podman >/dev/null 2>&1 || { echo >&2 "❌ Podman is required but not installed. Aborting."; exit 1; }
 command -v podman-compose >/dev/null 2>&1 || { echo >&2 "❌ podman-compose is required but not installed. Aborting."; exit 1; }
 
-# 2. Setup Environment Variables
+# 2. Environment Variables — .env is the operator-managed source of truth.
+# This script NEVER creates, edits or deletes it; it only requires it to exist.
 if [ ! -f .env ]; then
-    echo "📄 Creating .env from .env.example..."
-    cp rental-platform/.env.example .env
-    
-    # Generate random secrets
-    RANDOM_JWT=$(openssl rand -base64 32)
-    RANDOM_MASTER=$(openssl rand -base64 32)
-    RANDOM_ADMIN=$(openssl rand -base64 32)
-    
-    # Use | as delimiter to avoid issues with / in base64
-    sed -i "s|AUTH_JWT_SECRET=change-me-to-a-secure-random-value|AUTH_JWT_SECRET=$RANDOM_JWT|g" .env
-    sed -i "s|MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value|MASTER_ENCRYPTION_KEY=$RANDOM_MASTER|g" .env
-    sed -i "s|PLATFORM_ADMIN_KEY=change-me-to-a-secure-random-value|PLATFORM_ADMIN_KEY=$RANDOM_ADMIN|g" .env
-    
-    echo "✅ .env created with fresh secrets."
-else
-    echo "✅ .env file already exists."
+    echo "❌ .env not found at repo root. Create it manually (see rental-platform/.env.example)." >&2
+    echo "   This script will not generate or modify .env." >&2
+    exit 1
 fi
+echo "✅ .env file present — left untouched."
 
 # Load brand name for script messages
 BRAND_NAME=$(grep NEXT_PUBLIC_BRAND_NAME .env | cut -d '=' -f2- || echo "bestflats.vip")
 echo "🚀 Starting $BRAND_NAME Deployment..."
 
-# Ensure .env is available in the rental-platform directory for podman-compose
+# Propagate the managed root .env to where podman-compose reads it (one-way copy FROM
+# the source of truth; the root .env itself is never modified).
 cp .env rental-platform/.env
 
 # 3. Build and Start

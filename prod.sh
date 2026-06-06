@@ -3,64 +3,19 @@ set -e
 
 echo "🚀 Starting bestflats.vip PRODUCTION Deployment..."
 
-# 1. Environment Setup
+# 1. Environment Setup — .env is the operator-managed source of truth.
+# This script NEVER creates, edits or deletes it; it only requires it to exist.
+# Configure NODE_ENV=production, secrets (AUTH_JWT_SECRET, MASTER_ENCRYPTION_KEY),
+# FRONTEND_ORIGIN, NEXT_PUBLIC_BACKEND_URL, MONGO_URI, etc. in .env yourself.
 if [ ! -f .env ]; then
-    echo "⚠️  .env file missing. Creating from example..."
-    cp rental-platform/.env.example .env
+    echo "❌ .env not found at repo root. Create it manually (see rental-platform/.env.example)." >&2
+    echo "   This script will not generate or modify .env." >&2
+    exit 1
 fi
+echo "✅ .env present — left untouched."
 
-# Ensure NODE_ENV is set to production in .env
-if grep -q "NODE_ENV=" .env; then
-    sed -i 's/NODE_ENV=.*/NODE_ENV=production/' .env
-else
-    echo "NODE_ENV=production" >> .env
-fi
-
-# Ensure secrets are secure
-if grep -q "AUTH_JWT_SECRET=your-secret-key-change-me" .env; then
-    echo "🔐 Generating secure AUTH_JWT_SECRET..."
-    SECRET=$(openssl rand -base64 32)
-    sed -i "s/AUTH_JWT_SECRET=.*/AUTH_JWT_SECRET=$SECRET/" .env
-fi
-
-# 1b. Public Domain Configuration (Cloudflare Support)
-echo "🌐 Configuring Public Domains..."
-# Check if domains are already set, otherwise prompt or use localhost as fallback
-if ! grep -q "FRONTEND_ORIGIN=http" .env || grep -q "localhost:3000" .env; then
-    read -p "Enter your public frontend domain (e.g., https://rent.example.com) [leave empty for localhost]: " PUB_FE
-    if [ -n "$PUB_FE" ]; then
-        sed -i "s|FRONTEND_ORIGIN=.*|FRONTEND_ORIGIN=$PUB_FE|" .env
-    fi
-fi
-
-if ! grep -q "NEXT_PUBLIC_BACKEND_URL=http" .env || grep -q "localhost:4000" .env; then
-    read -p "Enter your public backend domain (e.g., https://api.example.com) [leave empty for localhost]: " PUB_BE
-    if [ -n "$PUB_BE" ]; then
-        sed -i "s|NEXT_PUBLIC_BACKEND_URL=.*|NEXT_PUBLIC_BACKEND_URL=$PUB_BE|" .env
-    fi
-fi
-
-# 1c. Secure Agent & Encryption Setup
-echo "🔐 Configuring Security Layers..."
-if ! grep -q "GOOGLE_CLIENT_ID=." .env || grep -q "apps.googleusercontent.com" .env; then
-    read -p "Enter your Google Client ID for Agents (from Cloud Console) [Optional]: " GOOGLE_ID
-    if [ -n "$GOOGLE_ID" ]; then
-        # Ensure the key exists in .env
-        if grep -q "GOOGLE_CLIENT_ID=" .env; then
-            sed -i "s|GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_ID|" .env
-        else
-            echo "GOOGLE_CLIENT_ID=$GOOGLE_ID" >> .env
-        fi
-    fi
-fi
-
-if grep -q "MASTER_ENCRYPTION_KEY=change-me-to-a-secure-random-value" .env; then
-    echo "🔑 Generating secure MASTER_ENCRYPTION_KEY..."
-    M_KEY=$(openssl rand -base64 32)
-    sed -i "s|MASTER_ENCRYPTION_KEY=.*|MASTER_ENCRYPTION_KEY=$M_KEY|" .env
-fi
-
-# Ensure .env is available in subdirectories for building
+# Propagate the managed root .env to where podman-compose reads it (one-way copy FROM
+# the source of truth; the root .env itself is never modified).
 cp .env rental-platform/.env
 # Compose receives private env through rental-platform/.env. Do not copy secrets into build contexts.
 
