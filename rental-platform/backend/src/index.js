@@ -11,6 +11,19 @@ import authRoutes from "./routes/auth.js";
 import ucpRoutes from "./routes/ucp.js";
 import { authMiddleware, requireRole } from "./auth/index.js";
 import { getMcpServer } from "./mcp/server.js";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import path from "path";
+
+// Version metadata, resolved once at startup. GIT_COMMIT/BUILD_TIME are baked at
+// image build time (see Containerfile / podman-compose build args); version comes
+// from package.json. Exposed via GET /version so you can confirm which code is live.
+const __dirnameVer = path.dirname(fileURLToPath(import.meta.url));
+let PKG_VERSION = "unknown";
+try {
+  PKG_VERSION = JSON.parse(readFileSync(path.join(__dirnameVer, "../package.json"), "utf8")).version;
+} catch { /* keep "unknown" */ }
+const STARTED_AT = new Date().toISOString();
 
 const mcpTransports = new Map();
 
@@ -104,6 +117,19 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 });
 
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+
+// Public version/health endpoint: confirms which code build is actually running.
+app.get('/version', (req, res) => {
+  res.json({
+    name: 'bestflats-backend',
+    version: PKG_VERSION,
+    commit: process.env.GIT_COMMIT || 'unknown',
+    builtAt: process.env.BUILD_TIME || 'unknown',
+    startedAt: STARTED_AT,
+    node: process.version,
+    env: process.env.NODE_ENV || 'development',
+  });
+});
 
 const PORT = process.env.PORT || 4000;
 

@@ -12,4 +12,10 @@ COPY jest.config.cjs .
 
 EXPOSE 4000
 
+# Bake build metadata so GET /version can report the running build.
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV BUILD_TIME=$BUILD_TIME
+
 CMD ["node", "src/index.js"]

@@ -99,6 +99,15 @@ afterAll(async () => {
 describe('E2E non-regression tests', () => {
   let bobToken, bobId, bookingId, availId, aptE2EId, aptOtherId;
 
+  test('GET /version reports build metadata (public, no auth)', async () => {
+    const res = await request.get('/version').expect(200);
+    expect(res.body.name).toBe('bestflats-backend');
+    expect(typeof res.body.version).toBe('string');
+    expect(res.body).toHaveProperty('commit');
+    expect(res.body).toHaveProperty('startedAt');
+    expect(res.body.node).toBe(process.version);
+  });
+
   test('setup test apartments', async () => {
     const res1 = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Apt E2E', pricePerNight: 100 }).expect(201);
     aptE2EId = res1.body._id;

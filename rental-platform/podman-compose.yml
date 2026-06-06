@@ -11,6 +11,9 @@ services:
     build:
       context: ./backend
       dockerfile: Containerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     container_name: backend
     restart: always
     environment:

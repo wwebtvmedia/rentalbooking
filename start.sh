@@ -67,7 +67,10 @@ echo "🚀 Starting $BRAND_NAME Deployment..."
 cp .env rental-platform/.env
 
 # 3. Build and Start
-echo "🏗️  Building and starting services..."
+# Stamp the build with the current git commit + UTC time so GET /version reports it.
+export GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+export BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "🏗️  Building and starting services... (commit $GIT_COMMIT)"
 (cd rental-platform && podman-compose build && podman-compose up -d)
 
 # 4. Final verification steps... (renumbering)
