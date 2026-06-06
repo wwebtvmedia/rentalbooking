@@ -18,7 +18,7 @@ non-regression suite.
 | Page | URL | What it does | How to authenticate |
 | :-- | :-- | :-- | :-- |
 | **Flat management** | **https://www.bestflats.vip/admin** | Create / edit / delete flats, upload photos, see **all** listings including host-posted and pending ones | Prompts **"Admin token"** on each write — paste the admin JWT |
-| **Intelligence dashboard** | **https://www.bestflats.vip/admin/dashboard** | Revenue, flat count, customers, recent bookings (`/admin/platform/stats`) | Reads the admin JWT from the browser's `localStorage.token` |
+| **Intelligence dashboard** | **https://www.bestflats.vip/admin/dashboard** | Revenue, flat count, customers, recent bookings (`/admin/platform/stats`) | **Paste the admin token in the sign-in box** (Sign out clears it; after 3 failed attempts a captcha is required) |
 
 **Mint the admin token** (the "magic key" — an admin JWT signed with the prod `AUTH_JWT_SECRET`):
 ```bash
@@ -27,10 +27,10 @@ python3 gen_token.py "$(grep '^AUTH_JWT_SECRET=' .env | cut -d= -f2-)"
 # -> eyJhbGciOiJIUzI1Ni...  (roles:["admin"])
 ```
 - For **/admin**: open the page and paste the token in the **"Admin token"** prompt when you create/edit/delete/upload.
-- For **/admin/dashboard**: set the token once in the browser console, then reload:
-  ```js
-  localStorage.setItem('token', 'PASTE_ADMIN_JWT_HERE')
-  ```
+- For **/admin/dashboard**: paste the token into the **sign-in box** and click *Access Dashboard*
+  (it's kept only in this browser's `localStorage`; *Sign out* clears it). A **brute-force
+  deterrent** kicks in after **3 failed attempts** — a simple captcha must be solved before
+  trying again. The backend also rate-limits all requests (100 / 15 min per IP).
 - The same token works for the **API** directly: `Authorization: Bearer <token>` (see §5).
 
 > The token is bearer credential — anyone holding it is admin. Don't commit it or paste it into shared docs. Mint a fresh one when needed; they're cheap.

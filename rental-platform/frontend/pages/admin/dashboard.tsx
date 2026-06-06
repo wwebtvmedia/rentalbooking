@@ -8,14 +8,27 @@ export default function PlatformDashboard() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [token, setToken] = useState<string | null>(null);
+  const [tokenInput, setTokenInput] = useState('');
+  const [failCount, setFailCount] = useState(0);
+  const [captcha, setCaptcha] = useState<{ a: number; b: number } | null>(null);
+  const [captchaInput, setCaptchaInput] = useState('');
 
-  const fetchData = async () => {
+  // Brute-force deterrent: after 3 failed sign-in attempts, require a captcha.
+  const CAPTCHA_AFTER = 3;
+  const newCaptcha = () => setCaptcha({ a: 1 + Math.floor(Math.random() * 9), b: 1 + Math.floor(Math.random() * 9) });
+
+  const registerFailure = () => {
+    const next = failCount + 1;
+    setFailCount(next);
+    if (next >= CAPTCHA_AFTER) newCaptcha();
+  };
+
+  const fetchData = async (opts: { countFailure?: boolean } = {}) => {
     try {
       setLoading(true);
+      setError('');
       const base = API_BASE_URL;
       const token = localStorage.getItem('token');
-      
       const headers: any = { Authorization: `Bearer ${token}` };
 
       const [statsRes, custRes] = await Promise.all([
@@ -24,11 +37,42 @@ export default function PlatformDashboard() {
       ]);
       setStats(statsRes.data);
       setCustomers(custRes.data);
+      setFailCount(0);
+      setCaptcha(null);
     } catch (err: any) {
-      setError('A valid Admin Session is required to access this dashboard.');
+      setStats(null);
+      if (opts.countFailure) registerFailure();
+      setError('Invalid or missing admin token. Paste a valid admin token to continue.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const submitToken = () => {
+    // After repeated failures, the captcha must be solved before another attempt.
+    if (failCount >= CAPTCHA_AFTER) {
+      if (!captcha || parseInt(captchaInput, 10) !== captcha.a + captcha.b) {
+        setError('Please solve the verification challenge correctly.');
+        newCaptcha();
+        setCaptchaInput('');
+        return;
+      }
+    }
+    const t = tokenInput.trim();
+    if (!t) return;
+    localStorage.setItem('token', t);
+    setTokenInput('');
+    setCaptchaInput('');
+    fetchData({ countFailure: true });
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setStats(null);
+    setCustomers([]);
+    setError('');
+    setFailCount(0);
+    setCaptcha(null);
   };
 
   const removeUser = async (id: string) => {
@@ -46,19 +90,82 @@ export default function PlatformDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    if (typeof window !== 'undefined' && localStorage.getItem('token')) fetchData();
+    else setLoading(false);
   }, []);
 
   if (loading) return <Layout title="Loading Dashboard..."><div className="py-40 text-center">Analysing metrics...</div></Layout>;
-  if (error) return <Layout title="Access Denied"><div className="py-40 text-center text-red-600">{error}</div></Layout>;
+
+  // Not authenticated -> show the sign-in box (with captcha after repeated failures).
+  if (!stats) return (
+    <Layout title="Admin Sign-in | bestflats.vip">
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center py-20">
+        <div className="card bg-white border border-gray-100 p-10 w-full max-w-md">
+          <span className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-3 inline-block">Enterprise Intelligence</span>
+          <h1 className="text-2xl font-black mb-2">Admin Sign-in.</h1>
+          <p className="text-sm text-gray-500 mb-6">Paste an admin token to access the platform dashboard.</p>
+
+          <input
+            type="password"
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submitToken(); }}
+            placeholder="Admin token (eyJhbG…)"
+            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-gold"
+          />
+
+          {failCount >= CAPTCHA_AFTER && captcha && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Verification — too many attempts</p>
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-sm select-none">{captcha.a} + {captcha.b} = ?</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={captchaInput}
+                  onChange={(e) => setCaptchaInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submitToken(); }}
+                  placeholder="Answer"
+                  className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={submitToken}
+            className="w-full bg-black text-white rounded-lg py-3 text-[10px] font-black tracking-widest uppercase hover:bg-gray-800 transition-colors"
+          >
+            Access Dashboard
+          </button>
+
+          {error && <p className="text-red-600 text-[11px] mt-4">{error}</p>}
+          {failCount > 0 && failCount < CAPTCHA_AFTER && (
+            <p className="text-amber-600 text-[11px] mt-2">{CAPTCHA_AFTER - failCount} attempt(s) left before verification is required.</p>
+          )}
+          <p className="text-[10px] text-gray-400 mt-6 leading-relaxed">
+            Mint a token on the server with <code>gen_token.py</code> using <code>AUTH_JWT_SECRET</code>. It is stored only in this browser.
+          </p>
+        </div>
+      </div>
+    </Layout>
+  );
 
   return (
     <Layout title="Platform Intelligence | Admin">
       <div className="bg-gray-50 min-h-screen py-20">
         <div className="container">
-          <header className="mb-16">
-            <span className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-4 inline-block">Enterprise Intelligence</span>
-            <h1 className="text-4xl font-black">Platform Dashboard.</h1>
+          <header className="mb-16 flex items-end justify-between">
+            <div>
+              <span className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-4 inline-block">Enterprise Intelligence</span>
+              <h1 className="text-4xl font-black">Platform Dashboard.</h1>
+            </div>
+            <button
+              onClick={logout}
+              className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-600 transition-colors"
+            >
+              Sign out
+            </button>
           </header>
 
           {/* Metric Cards */}
