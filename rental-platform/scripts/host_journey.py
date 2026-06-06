@@ -162,6 +162,13 @@ def main():
     leaked = [c for c in created if c in pub_ids]
     print(f"  6. GET /apartments (public) -> {st}  pending hidden from public: {'✓' if not leaked else '✗ LEAKED ' + str(leaked)}")
 
+    if os.getenv("SKIP_ADMIN"):
+        print(f"\n  (SKIP_ADMIN) {len([c for c in created if c])} flat(s) created as pending; "
+              f"{N} validation email(s) sent to {ADMIN_EMAIL} for you to approve.")
+        ok = all(created) and not leaked
+        print("RESULT:", "✅ PASS (pending created & hidden; admin to validate)" if ok else "⚠️  see ✗ above")
+        sys.exit(0 if ok else 1)
+
     # read the admin validation emails and open the links to publish
     print(f"  7. reading {N} admin validation email(s) for {ADMIN_EMAIL} ...")
     amsgs = poll_mail(ADMIN_EMAIL, want=N, contains="/flats/validate")
