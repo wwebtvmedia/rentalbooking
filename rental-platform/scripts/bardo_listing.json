@@ -1,0 +1,54 @@
+{
+  "source": {
+    "site": "Mubawab Tunisie",
+    "url": "https://www.mubawab.tn/fr/a/8354048/a-louer-%C3%A9tage-de-villa-s3-hst-au-bardo",
+    "listing_id": "8354048",
+    "scraped_at": "2026-06-06"
+  },
+  "title": "A louer étage de villa S3 HST au Bardo",
+  "type": "Étage de villa (house floor)",
+  "transaction": "Location (rent)",
+  "price": {
+    "amount": 1800,
+    "currency": "TND",
+    "period": "month"
+  },
+  "location": {
+    "city": "Le Bardo",
+    "governorate": "Tunis",
+    "country": "Tunisie",
+    "neighborhood": "Le Bardo",
+    "note": "Près de la Route de la Mecque / grand axe routier (à confirmer avec l'agence)"
+  },
+  "surface_m2": 100,
+  "rooms": {
+    "total_pieces": 4,
+    "bedrooms": 3,
+    "bathrooms": 1
+  },
+  "description": "Rez-de-chaussée haut standing, jamais habité / rénové. Spacieux et lumineux séjour, cuisine équipée avec rangements, trois chambres et salle de bain partagée. Chauffage central, jardin et garage.",
+  "amenities": [
+    "Chauffage central",
+    "Jardin",
+    "Garage",
+    "Porte blindée",
+    "Cuisine équipée",
+    "Jamais habité"
+  ],
+  "contact": {
+    "agency": "La Méditerranée Immobilière",
+    "channels": ["Téléphone", "WhatsApp", "Email (via la page)"]
+  },
+  "photos": [
+    "photos/photo_01.avif",
+    "photos/photo_02.avif",
+    "photos/photo_03.avif",
+    "photos/photo_04.avif",
+    "photos/photo_05.avif",
+    "photos/photo_06.avif",
+    "photos/photo_07.avif",
+    "photos/photo_08.avif",
+    "photos/photo_09.avif",
+    "photos/photo_10.avif"
+  ]
+}
