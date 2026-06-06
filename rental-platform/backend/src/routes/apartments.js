@@ -25,7 +25,7 @@ function optionalObjectId(value) {
   return value && mongoose.Types.ObjectId.isValid(value) ? value : undefined;
 }
 
-async function buildPayload(body, existing = {}) {
+export async function buildPayload(body, existing = {}) {
   const photos = body.photos !== undefined ? photosFromBody(body.photos) : existing.photos;
   let lat = body.lat !== undefined && body.lat !== '' ? Number(body.lat) : existing.lat;
   let lon = body.lon !== undefined && body.lon !== '' ? Number(body.lon) : existing.lon;

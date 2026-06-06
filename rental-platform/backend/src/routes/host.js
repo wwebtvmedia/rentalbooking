@@ -4,9 +4,34 @@ import Booking from '../models/Booking.js';
 import User from '../models/User.js';
 import { requireRole, authMiddleware } from '../auth/index.js';
 import { decrypt, unprotectKey } from '../lib/encryption.js';
+import { buildPayload } from './apartments.js';
+import { validate, apartmentSchema } from '../lib/validation.js';
 
 const router = express.Router();
 router.use(authMiddleware);
+
+// Host self-service: a host customer proposes a new flat (owned by themselves).
+// Ownership is forced to the authenticated host, ignoring any hostId in the body.
+router.post('/flats', requireRole('host'), validate(apartmentSchema), async (req, res) => {
+  try {
+    const payload = await buildPayload(req.body);
+    payload.hostId = req.user.id;
+    const apt = await Apartment.create(payload);
+    res.status(201).json(apt);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Host self-service: list the flats I own.
+router.get('/flats', requireRole('host'), async (req, res) => {
+  try {
+    const flats = await Apartment.find({ hostId: req.user.id }).sort({ name: 1 });
+    res.json(flats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 function safePublicUser(user) {
   if (!user) return null;

@@ -214,6 +214,36 @@ describe('E2E non-regression tests', () => {
     expect(found).toBe(true);
   });
 
+  test('host self-service: a host can propose their own flat and upload photos', async () => {
+    const jwt = require('jsonwebtoken');
+    const hostId = new mongoose.Types.ObjectId().toString();
+    const hostToken = jwt.sign(
+      { sub: hostId, name: 'Hosty McHost', email: 'hosty@e2e.test', roles: ['host'] },
+      process.env.AUTH_JWT_SECRET, { expiresIn: '1h' }
+    );
+
+    // A host can upload a photo (previously admin-only).
+    const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+    const up = await request.post('/uploads').set('Authorization', `Bearer ${hostToken}`).send({ filename: 'h.png', b64: pngB64 }).expect(200);
+    expect(up.body.url).toBeTruthy();
+
+    // A guest cannot publish a flat.
+    await request.post('/admin/host/flats').set('Authorization', `Bearer ${bobToken}`).send({ name: 'Nope', pricePerNight: 50 }).expect(403);
+
+    // The host can, and ownership is forced to the authenticated host (body hostId ignored).
+    const res = await request.post('/admin/host/flats').set('Authorization', `Bearer ${hostToken}`)
+      .send({ name: 'Host Self Flat', address: 'Le Bardo', pricePerNight: 80, photos: [up.body.url], hostId: 'deadbeefdeadbeefdeadbeef', lat: 36.8, lon: 10.1 })
+      .expect(201);
+    expect(res.body._id).toBeTruthy();
+    expect(res.body.hostId).toBe(hostId);
+
+    // It shows up in the host's own flats and the host dashboard.
+    const mine = await request.get('/admin/host/flats').set('Authorization', `Bearer ${hostToken}`).expect(200);
+    expect(mine.body.some(f => f._id === res.body._id)).toBe(true);
+    const dash = await request.get('/admin/host/dashboard').set('Authorization', `Bearer ${hostToken}`).expect(200);
+    expect(dash.body.flats.some(f => f.id === res.body._id)).toBe(true);
+  });
+
   test('calendar filtering returns only apartment events', async () => {
     // create a booking for other apartment
     const start = new Date(Date.now() + 72*3600*1000).toISOString();

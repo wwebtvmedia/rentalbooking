@@ -88,7 +88,8 @@ router.get('/:filename', async (req, res) => {
   }
 });
 
-router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
+// Hosts (and admins) may upload photos for their listings; guests may not.
+router.post('/', authMiddleware, requireRole('host'), async (req, res) => {
   if (req.is('application/json')) {
     const { b64 } = req.body || {};
     if (!b64) return res.status(400).json({ error: 'Missing b64' });
