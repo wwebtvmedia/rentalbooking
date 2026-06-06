@@ -55,6 +55,14 @@ coverage/
 # Ignore local secrets
 secrets.json
 
+# Production env files, CLI tokens, local DB data and scratch working dirs
+.env.pi_production
+.rental_cli_token
+.rental_cli_token.admin.bak
+/data/
+rental-platform/data/
+/tmp/
+
 # Certificates and generated private keys
 certs/
 *.p12
