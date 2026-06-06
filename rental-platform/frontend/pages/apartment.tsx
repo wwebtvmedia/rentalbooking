@@ -2,14 +2,64 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { BRAND_NAME, assetUrl } from '../lib/config';
+import { BRAND_NAME, SITE_URL, assetUrl } from '../lib/config';
 import { fetchApartmentById } from '../lib/apartments';
 
-export default function ApartmentPage() {
+// Build schema.org structured data (Product + Offer + Apartment) for a listing so
+// search engines and AI agents can extract price, location and images.
+function buildListingJsonLd(apartment: any, brandName: string) {
+  if (!apartment) return null;
+  const photos = (Array.isArray(apartment.photos) ? apartment.photos : [])
+    .map((p: string) => assetUrl(p))
+    .filter((u: string) => u && u.startsWith('http'));
+  const canonical = `${SITE_URL}/apartment?id=${apartment._id || apartment.id || ''}`;
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Product',
+        name: apartment.name,
+        description: apartment.smallDescription || apartment.description,
+        image: photos,
+        brand: { '@type': 'Brand', name: brandName },
+        category: 'Vacation rental',
+        offers: {
+          '@type': 'Offer',
+          price: apartment.pricePerNight,
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          url: canonical,
+        },
+      },
+      {
+        '@type': 'Apartment',
+        name: apartment.name,
+        image: photos,
+        ...(apartment.address ? { address: { '@type': 'PostalAddress', streetAddress: apartment.address } } : {}),
+        ...(apartment.lat != null && apartment.lon != null
+          ? { geo: { '@type': 'GeoCoordinates', latitude: apartment.lat, longitude: apartment.lon } }
+          : {}),
+      },
+    ],
+  };
+}
+
+export async function getServerSideProps(ctx: any) {
+  let initialApartment = null;
+  try {
+    const apt = await fetchApartmentById(ctx.query.id);
+    initialApartment = apt && (apt._id || apt.id) ? apt : null;
+  } catch {
+    /* fall back to client fetch */
+  }
+  return { props: { initialApartment } };
+}
+
+export default function ApartmentPage({ initialApartment = null }: any) {
   const router = useRouter();
   const { id } = router.query;
-  const [apartment, setApartment] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [apartment, setApartment] = useState<any>(initialApartment);
+  const [loading, setLoading] = useState(!initialApartment);
   const [error, setError] = useState('');
 
   const brandName = BRAND_NAME;
@@ -36,7 +86,14 @@ export default function ApartmentPage() {
     <div className="fade-in-up">
       <Head>
         <title>{`${apartment.name} | ${brandName}`}</title>
-
+        {apartment.smallDescription && <meta name="description" content={apartment.smallDescription} />}
+        <link rel="canonical" href={`${SITE_URL}/apartment?id=${apartment._id || apartment.id || ''}`} />
+        {(() => {
+          const jsonLd = buildListingJsonLd(apartment, brandName);
+          return jsonLd ? (
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+          ) : null;
+        })()}
       </Head>
 
       <header className="site-header">

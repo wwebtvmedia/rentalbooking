@@ -554,7 +554,7 @@ serves (after a frontend deploy):
 | `https://www.bestflats.vip/robots.txt` | Allows AI crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, CCBot, …); links the sitemap, llms.txt and UCP discovery |
 | `https://www.bestflats.vip/llms.txt` | LLM-friendly summary of the site + the agent endpoints ([llms.txt standard](https://llmstxt.org)) |
 | `https://www.bestflats.vip/.well-known/ucp.json` | Machine-readable agent discovery manifest (protocol, endpoints, AP2/USDC payment) |
-| `https://www.bestflats.vip/sitemap.xml` | Public pages for search/AI indexing |
+| `https://www.bestflats.vip/sitemap.xml` | **Dynamic** sitemap — static pages **+ every published residence** (`/apartment?id=…`) |
 | `https://api.bestflats.vip/ucp/discover?capabilityHash=rental-listing-v1` | The live agentic catalog |
 
 These are static files in `rental-platform/frontend/public/` — **deploy the frontend** for them
@@ -569,8 +569,9 @@ curl -s https://www.bestflats.vip/.well-known/ucp.json
 **To actively get LLMs to "know" the site:**
 1. Keep `robots.txt` allowing the AI bots above (already configured) so crawlers may index it.
 2. Submit `https://www.bestflats.vip/sitemap.xml` in Google Search Console / Bing Webmaster.
-3. Add **schema.org JSON-LD** (`Product`/`Offer`/`LodgingBusiness`) to listing pages so
-   search & AI extract structured data (recommended next step — not yet implemented).
+3. **schema.org JSON-LD** is emitted (server-rendered) on each residence page
+   (`/apartment?id=…`) as a `Product` + `Offer` + `Apartment` graph (name, price, images,
+   address, geo) so search & AI extract structured listing data.
 4. Publish the `.well-known/ucp.json` + UCP discovery URL in any agent directory / partner you
    integrate with; agents follow the manifest to the live discovery endpoint.
 5. Note: indexing by third-party LLMs is **their** decision and timeline — you can invite and

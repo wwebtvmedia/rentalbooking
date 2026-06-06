@@ -1,4 +1,5 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bestflats.vip').replace(/\/$/, '');
 export const BRAND_NAME = process.env.NEXT_PUBLIC_BRAND_NAME || 'bestflats.vip';
 export const INSTAGRAM_URL = process.env.NEXT_PUBLIC_INSTAGRAM_URL || 'https://www.instagram.com/';
 
