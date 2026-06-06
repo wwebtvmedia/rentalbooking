@@ -493,6 +493,27 @@ see only the flats/bookings assigned to them (RBAC scoping in the backend).
 
 ---
 
+## 14b. Ratings & reviews (double-moderated)
+
+Guests rate **flats** and hosts rate **guests** — each with a 1–5 rating and a comment.
+Every comment is **double-gated**: published only after **(1) the guest party confirms it**
+**and (2) a moderator approves it**. The owning host may **always reply**.
+
+| Action | Endpoint | Who |
+| :-- | :-- | :-- |
+| Post a flat review | `POST /reviews` `{apartmentId, type:"flat", rating, comment}` | guest |
+| Post a guest review | `POST /reviews` `{apartmentId, type:"guest", rating, comment, guestId}` | host |
+| Guest confirms (step 1) | `POST /reviews/:id/confirm` | the guest party |
+| Moderator approves (step 2) | `POST /reviews/:id/approve` (or `/reject`) | admin |
+| Host replies to a comment | `POST /reviews/:id/reply` `{text}` | owning host / admin |
+| Moderation queue | `GET /reviews/pending` | admin |
+| Public reviews + average | `GET /reviews?apartmentId=…` or `?type=guest&guestId=…` | public |
+
+A review is `pending` until both `guestConfirmed` and `moderatorApproved` are true, then
+`published`. `GET /reviews` returns only published items plus `summary.averageRating`.
+
+---
+
 ## 15. Agentic commerce (UCP / AP2) & making the site known to LLMs
 
 ### 15.1 What UCP is here

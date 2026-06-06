@@ -188,6 +188,7 @@ app.use('/uploads', (await import('./routes/uploads.js')).default);
 app.use('/seed', (await import('./routes/seed.js')).default);
 app.use('/ucp', ucpRoutes);
 app.use('/payments', (await import('./routes/payments.js')).default);
+app.use('/reviews', (await import('./routes/reviews.js')).default);
 app.use('/admin/platform', (await import('./routes/admin.js')).default);
 app.use('/admin/host', (await import('./routes/host.js')).default);
 app.use('/admin/concierge', (await import('./routes/concierge.js')).default);

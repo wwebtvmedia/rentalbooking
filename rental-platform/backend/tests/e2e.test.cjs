@@ -306,6 +306,51 @@ describe('E2E non-regression tests', () => {
     expect(up.body.url).toContain('/uploads/');
   });
 
+  test('reviews: guest rates a flat (double-moderated), host replies, host rates the guest', async () => {
+    const jwt = require('jsonwebtoken');
+
+    // 1. Guest posts a flat review -> pending, hidden from public.
+    const create = await request.post('/reviews').set('Authorization', `Bearer ${bobToken}`)
+      .send({ apartmentId: aptE2EId, type: 'flat', rating: 5, comment: 'Wonderful stay' }).expect(201);
+    const rid = create.body._id;
+    expect(create.body.status).toBe('pending');
+    let pub = await request.get(`/reviews?apartmentId=${aptE2EId}`).expect(200);
+    expect(pub.body.reviews.some(r => r._id === rid)).toBe(false);
+
+    // 2. Guest confirms -> still pending (moderator approval still required).
+    await request.post(`/reviews/${rid}/confirm`).set('Authorization', `Bearer ${bobToken}`).expect(200);
+    pub = await request.get(`/reviews?apartmentId=${aptE2EId}`).expect(200);
+    expect(pub.body.reviews.some(r => r._id === rid)).toBe(false);
+
+    // A guest cannot self-approve (moderator only).
+    await request.post(`/reviews/${rid}/approve`).set('Authorization', `Bearer ${bobToken}`).expect(403);
+
+    // 3. Moderator approves -> published + visible with an aggregate rating.
+    const appr = await request.post(`/reviews/${rid}/approve`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(appr.body.status).toBe('published');
+    pub = await request.get(`/reviews?apartmentId=${aptE2EId}`).expect(200);
+    expect(pub.body.reviews.some(r => r._id === rid)).toBe(true);
+    expect(pub.body.summary.averageRating).toBeGreaterThan(0);
+
+    // 4. Host (admin owner-bypass here) replies to the comment.
+    const reply = await request.post(`/reviews/${rid}/reply`).set('Authorization', `Bearer ${adminToken}`).send({ text: 'Thank you!' }).expect(200);
+    expect(reply.body.hostReply).toBe('Thank you!');
+    pub = await request.get(`/reviews?apartmentId=${aptE2EId}`).expect(200);
+    expect(pub.body.reviews.find(r => r._id === rid).hostReply).toBe('Thank you!');
+
+    // 5. Host rates the GUEST -> needs the guest's confirm + moderator approval to publish.
+    const hostToken = jwt.sign({ sub: new mongoose.Types.ObjectId().toString(), name: 'Hosty', email: 'h@e2e.test', roles: ['host'] }, process.env.AUTH_JWT_SECRET, { expiresIn: '1h' });
+    const g = await request.post('/reviews').set('Authorization', `Bearer ${hostToken}`)
+      .send({ apartmentId: aptE2EId, type: 'guest', rating: 5, comment: 'Great guest', guestId: bobId }).expect(201);
+    await request.post(`/reviews/${g.body._id}/confirm`).set('Authorization', `Bearer ${bobToken}`).expect(200);
+    await request.post(`/reviews/${g.body._id}/approve`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const gpub = await request.get(`/reviews?type=guest&guestId=${bobId}`).expect(200);
+    expect(gpub.body.reviews.some(r => r._id === g.body._id)).toBe(true);
+
+    // A guest cannot post a guest-review (host only).
+    await request.post('/reviews').set('Authorization', `Bearer ${bobToken}`).send({ apartmentId: aptE2EId, type: 'guest', rating: 5, guestId: bobId }).expect(403);
+  });
+
   test('calendar filtering returns only apartment events', async () => {
     // create a booking for other apartment
     const start = new Date(Date.now() + 72*3600*1000).toISOString();
