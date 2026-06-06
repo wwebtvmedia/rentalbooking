@@ -107,11 +107,15 @@ set_kv MASTER_ENCRYPTION_KEY    "$MASTER_ENCRYPTION_KEY"    "$TMP"
 set_kv PLATFORM_ADMIN_KEY       "$PLATFORM_ADMIN_KEY"       "$TMP"
 set_kv TAX_RATE                 "$TAX_RATE"                 "$TMP"
 
-# Persist Mongo auth identity so backup/restore/enable scripts can read it.
+# Persist Mongo auth identity. MONGO_ROOT_* are read by the helper scripts
+# (backup/restore/enable); MONGO_INITDB_ROOT_* are read by the mongo container itself
+# via env_file (raw password, NOT url-encoded — only MONGO_URI is encoded).
 if [ -n "${MONGO_ROOT_USERNAME:-}" ]; then
-    set_kv MONGO_ROOT_USERNAME  "$MONGO_ROOT_USERNAME"      "$TMP"
-    set_kv MONGO_ROOT_PASSWORD  "$MONGO_ROOT_PASSWORD"      "$TMP"
-    set_kv MONGO_DB             "$MONGO_DB"                 "$TMP"
+    set_kv MONGO_ROOT_USERNAME        "$MONGO_ROOT_USERNAME"  "$TMP"
+    set_kv MONGO_ROOT_PASSWORD        "$MONGO_ROOT_PASSWORD"  "$TMP"
+    set_kv MONGO_DB                   "$MONGO_DB"             "$TMP"
+    set_kv MONGO_INITDB_ROOT_USERNAME "$MONGO_ROOT_USERNAME"  "$TMP"
+    set_kv MONGO_INITDB_ROOT_PASSWORD "$MONGO_ROOT_PASSWORD"  "$TMP"
 fi
 
 # Optional overrides — only applied when provided in the environment.
