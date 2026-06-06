@@ -6,6 +6,7 @@ import { requireRole, authMiddleware } from '../auth/index.js';
 import { decrypt, unprotectKey } from '../lib/encryption.js';
 import { buildPayload } from './apartments.js';
 import { validate, apartmentSchema } from '../lib/validation.js';
+import { buildInvoice, taxRate } from '../lib/billing.js';
 import { sendFlatValidationEmail } from '../auth/mailer.js';
 import { logger } from '../logger.js';
 import jwt from 'jsonwebtoken';
@@ -142,12 +143,22 @@ router.get('/dashboard', requireRole('host'), async (req, res) => {
     const conciergeIds = [...new Set(flats.map(f => f.assignedConciergeId?.toString()).filter(Boolean))];
     const concierges = await User.find({ _id: { $in: conciergeIds } });
 
+    // Tips earned + automatic tax computed from the configured TAX_RATE.
+    const me = await User.findById(hostId);
+    const tips = me?.metadata?.tipsEarned || 0;
+    const rate = taxRate();
+    const automaticTax = Number((totalRevenue * rate).toFixed(2));
+
     res.json({
       summary: {
         flatCount: flats.length,
         totalRevenue,
         monthlyRevenue,
         yearlyRevenue,
+        tips,
+        taxRate: rate,
+        automaticTax,
+        netRevenue: Number((totalRevenue - automaticTax).toFixed(2)),
         taxDeclarationEstimate: totalRevenue * 0.75,
         localTaxPayable: localTax
       },
@@ -160,6 +171,32 @@ router.get('/dashboard', requireRole('host'), async (req, res) => {
       concierges: concierges.map(safePublicUser),
       recentBookings: await Promise.all(bookings.slice(0, 10).map(safeBooking))
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Host self-service: generate a tax invoice (bill) for my own flats' settled
+// bookings, optionally bounded to a [from, to] period. Tax is applied automatically.
+router.get('/invoice', requireRole('host'), async (req, res) => {
+  try {
+    const flats = await Apartment.find({ hostId: req.user.id }, '_id');
+    const flatIds = flats.map(f => f._id.toString());
+    const { from, to } = req.query;
+    const q = { apartmentId: { $in: flatIds }, paymentStatus: 'succeeded' };
+    if (from || to) {
+      q.start = {};
+      if (from) q.start.$gte = new Date(from);
+      if (to) q.start.$lte = new Date(to);
+    }
+    const bookings = await Booking.find(q).sort({ start: 1 });
+    const invoice = buildInvoice({
+      invoiceFor: { id: req.user.id, name: req.user.name || 'Host', role: 'host' },
+      bookings,
+      from: from || null,
+      to: to || null,
+    });
+    res.json(invoice);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

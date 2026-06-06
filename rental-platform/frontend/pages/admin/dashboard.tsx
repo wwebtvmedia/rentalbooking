@@ -6,6 +6,8 @@ import { API_BASE_URL } from '../../lib/config';
 export default function PlatformDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [guestStats, setGuestStats] = useState<any[]>([]);
+  const [hostStats, setHostStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tokenInput, setTokenInput] = useState('');
@@ -31,12 +33,16 @@ export default function PlatformDashboard() {
       const token = localStorage.getItem('token');
       const headers: any = { Authorization: `Bearer ${token}` };
 
-      const [statsRes, custRes] = await Promise.all([
+      const [statsRes, custRes, guestsRes, hostsRes] = await Promise.all([
         axios.get(`${base}/admin/platform/stats`, { headers, withCredentials: true }),
-        axios.get(`${base}/admin/platform/customers`, { headers, withCredentials: true })
+        axios.get(`${base}/admin/platform/customers`, { headers, withCredentials: true }),
+        axios.get(`${base}/admin/platform/guests`, { headers, withCredentials: true }),
+        axios.get(`${base}/admin/platform/hosts`, { headers, withCredentials: true })
       ]);
       setStats(statsRes.data);
       setCustomers(custRes.data);
+      setGuestStats(guestsRes.data.guests || []);
+      setHostStats(hostsRes.data.hosts || []);
       setFailCount(0);
       setCaptcha(null);
     } catch (err: any) {
@@ -258,6 +264,80 @@ export default function PlatformDashboard() {
               </section>
             </div>
           </div>
+
+          {/* Per-guest intelligence */}
+          <section className="mt-16">
+            <h2 className="text-xl font-black mb-8 uppercase tracking-widest text-gray-400 text-[11px]">Guests — Connections, Rentals, Concierge & Tips</h2>
+            <div className="overflow-x-auto bg-white rounded-2xl shadow-sm ring-1 ring-gray-100">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50">
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Guest</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Connections</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Rentals</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Concierge Stays</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Total Spent</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Tips</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {guestStats.map((g) => (
+                    <tr key={g.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-6">
+                        <p className="font-bold text-sm mb-1">{g.fullName}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[200px]">{g.email}</p>
+                      </td>
+                      <td className="p-6 font-medium">{g.connections}</td>
+                      <td className="p-6 font-medium">{g.rentals}</td>
+                      <td className="p-6 font-medium">{g.conciergeStays}</td>
+                      <td className="p-6 font-bold text-black">${g.totalSpent.toLocaleString()}</td>
+                      <td className="p-6 font-medium text-gold">${(g.tips || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                  {guestStats.length === 0 && <tr><td colSpan={6} className="p-6 text-gray-400 italic text-sm">No guests yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Per-host intelligence + automatic tax */}
+          <section className="mt-16">
+            <h2 className="text-xl font-black mb-8 uppercase tracking-widest text-gray-400 text-[11px]">Hosts — Residences, Revenue, Automatic Tax & Tips</h2>
+            <div className="overflow-x-auto bg-white rounded-2xl shadow-sm ring-1 ring-gray-100">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50">
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Host</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Connections</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Residences</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Rentals</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Revenue</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Auto Tax</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Concierges</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Tips</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {hostStats.map((h) => (
+                    <tr key={h.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-6">
+                        <p className="font-bold text-sm mb-1">{h.fullName}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[200px]">{h.email}</p>
+                      </td>
+                      <td className="p-6 font-medium">{h.connections}</td>
+                      <td className="p-6 font-medium">{h.flatCount}</td>
+                      <td className="p-6 font-medium">{h.rentals}</td>
+                      <td className="p-6 font-bold text-black">${h.revenue.toLocaleString()}</td>
+                      <td className="p-6 font-medium text-red-600">${h.automaticTax.toLocaleString()}</td>
+                      <td className="p-6 font-medium">{h.concierges}</td>
+                      <td className="p-6 font-medium text-gold">${(h.tips || 0).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                  {hostStats.length === 0 && <tr><td colSpan={8} className="p-6 text-gray-400 italic text-sm">No hosts yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </div>
     </Layout>

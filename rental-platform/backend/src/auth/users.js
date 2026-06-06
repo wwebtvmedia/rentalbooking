@@ -9,6 +9,16 @@ import {
   normalizeEmail,
 } from '../lib/encryption.js';
 
+// Record a successful sign-in for per-user "number of connections" statistics.
+export async function recordLogin(user) {
+  if (!user) return;
+  try {
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.lastLoginAt = new Date();
+    await user.save();
+  } catch { /* non-fatal */ }
+}
+
 export function publicUser(user, decrypted = {}) {
   return {
     id: user._id,

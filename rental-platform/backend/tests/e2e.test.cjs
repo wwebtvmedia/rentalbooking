@@ -477,6 +477,76 @@ describe('E2E non-regression tests', () => {
     expect(pi.body.paymentIntentId).toBeTruthy();
   });
 
+  test('stats & billing: per-guest + per-host intelligence, automatic tax, bill generation', async () => {
+    const jwt = require('jsonwebtoken');
+
+    // --- Create a REAL host user via the magic flow (role=host) ---
+    const hEmail = 'host-stats@e2e.test';
+    const mReq = await request.post('/auth/magic')
+      .send({ email: hEmail, fullName: 'Hilda Host', role: 'host', redirectUrl: 'http://localhost:5001/magic-callback' }).expect(200);
+    const verify = await request.post('/auth/magic/verify').send({ token: mReq.body.token }).expect(200);
+    const hostToken = verify.body.token;
+    const hostId = verify.body.user.id;
+    expect(hostId).toBeTruthy();
+
+    // Host submits a flat (pending) -> publish it via the admin validation link.
+    const flatRes = await request.post('/admin/host/flats').set('Authorization', `Bearer ${hostToken}`)
+      .send({ name: 'Host Stats Flat', pricePerNight: 120, depositAmount: 20000 }).expect(201);
+    const hostFlatId = flatRes.body.flat._id;
+    const vToken = jwt.sign({ flatId: hostFlatId, purpose: 'flat-validation' }, process.env.AUTH_JWT_SECRET, { expiresIn: '7d' });
+    await request.get(`/admin/host/flats/validate?token=${encodeURIComponent(vToken)}`).expect(200);
+
+    // A guest books the host's flat (gives both guest + host a rental).
+    const start = new Date(Date.now() + 120 * 3600 * 1000).toISOString();
+    const end = new Date(Date.now() + 122 * 3600 * 1000).toISOString();
+    await request.post('/bookings').set('Authorization', `Bearer ${bobToken}`)
+      .send({ fullName: 'Bob Tester', email: 'bob@e2e.test', apartmentId: hostFlatId, start, end }).expect(201);
+
+    // --- Admin: per-guest stats (connections, rentals, concierge, tips) ---
+    const guests = await request.get('/admin/platform/guests').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const bob = guests.body.guests.find(g => g.id === bobId);
+    expect(bob).toBeTruthy();
+    expect(bob.connections).toBeGreaterThanOrEqual(1);
+    expect(bob.rentals).toBeGreaterThanOrEqual(1);
+    expect(typeof bob.tips).toBe('number');
+    expect(typeof bob.conciergeStays).toBe('number');
+
+    // A guest cannot read the admin stats.
+    await request.get('/admin/platform/guests').set('Authorization', `Bearer ${bobToken}`).expect(403);
+
+    // --- Admin: per-host stats + AUTOMATIC TAX ---
+    const hosts = await request.get('/admin/platform/hosts').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(typeof hosts.body.taxRate).toBe('number');
+    const host = hosts.body.hosts.find(h => h.id === hostId);
+    expect(host).toBeTruthy();
+    expect(host.flatCount).toBeGreaterThanOrEqual(1);
+    expect(host.rentals).toBeGreaterThanOrEqual(1);
+    expect(host.connections).toBeGreaterThanOrEqual(1);
+    expect(host.automaticTax).toBeCloseTo(host.revenue * host.taxRate, 2);
+    expect(host.netRevenue).toBeCloseTo(host.revenue - host.automaticTax, 2);
+
+    // --- Admin: generate a host bill (with tax) ---
+    const inv = await request.get(`/admin/platform/hosts/${hostId}/invoice`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+    expect(Array.isArray(inv.body.lineItems)).toBe(true);
+    expect(inv.body.taxAmount).toBeCloseTo(inv.body.subtotal * inv.body.taxRate, 2);
+    expect(inv.body.total).toBeCloseTo(inv.body.subtotal + inv.body.taxAmount, 2);
+
+    // 404 when the target is not a host.
+    await request.get(`/admin/platform/hosts/${bobId}/invoice`).set('Authorization', `Bearer ${adminToken}`).expect(404);
+
+    // --- Host self-service: dashboard exposes tips + automatic tax, plus own bill ---
+    const dash = await request.get('/admin/host/dashboard').set('Authorization', `Bearer ${hostToken}`).expect(200);
+    expect(typeof dash.body.summary.tips).toBe('number');
+    expect(typeof dash.body.summary.automaticTax).toBe('number');
+    expect(typeof dash.body.summary.taxRate).toBe('number');
+
+    const selfBill = await request.get('/admin/host/invoice').set('Authorization', `Bearer ${hostToken}`).expect(200);
+    expect(selfBill.body.total).toBeCloseTo(selfBill.body.subtotal + selfBill.body.taxAmount, 2);
+
+    // A guest cannot pull a host invoice.
+    await request.get('/admin/host/invoice').set('Authorization', `Bearer ${bobToken}`).expect(403);
+  });
+
   test('MCP SSE endpoint is accessible', async () => {
     // We use a custom fetch to verify the headers without waiting for the full response
     // since SSE is a long-lived connection.

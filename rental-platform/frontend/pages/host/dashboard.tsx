@@ -7,6 +7,28 @@ export default function HostDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [billFrom, setBillFrom] = useState('');
+  const [billTo, setBillTo] = useState('');
+  const [invoice, setInvoice] = useState<any>(null);
+  const [billing, setBilling] = useState(false);
+
+  const generateBill = async () => {
+    try {
+      setBilling(true);
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (billFrom) params.set('from', billFrom);
+      if (billTo) params.set('to', billTo);
+      const res = await axios.get(`${API_BASE_URL}/admin/host/invoice?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInvoice(res.data);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to generate bill');
+    } finally {
+      setBilling(false);
+    }
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -53,6 +75,15 @@ export default function HostDashboard() {
               <div className="card p-8 bg-white border border-gray-100">
                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-4">Tax Declaration</span>
                 <span className="text-3xl font-black text-black">${data.summary.taxDeclarationEstimate.toLocaleString()}</span>
+              </div>
+              <div className="card p-8 bg-white border border-gray-100">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-4">Tips Earned</span>
+                <span className="text-3xl font-black text-black">${(data.summary.tips || 0).toLocaleString()}</span>
+              </div>
+              <div className="card p-8 bg-white border border-gray-100">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-4">Automatic Tax ({Math.round((data.summary.taxRate || 0) * 100)}%)</span>
+                <span className="text-3xl font-black text-black">${(data.summary.automaticTax || 0).toLocaleString()}</span>
+                <span className="text-[10px] block mt-4 text-gold">Net ${(data.summary.netRevenue || 0).toLocaleString()}</span>
               </div>
             </div>
             
@@ -115,6 +146,56 @@ export default function HostDashboard() {
                 </div>
             </section>
           </div>
+
+          <section className="mt-16">
+            <h2 className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-8">Generate Bill (with tax)</h2>
+            <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
+              <div className="flex flex-wrap items-end gap-6">
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">From</label>
+                  <input type="date" value={billFrom} onChange={e => setBillFrom(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">To</label>
+                  <input type="date" value={billTo} onChange={e => setBillTo(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm" />
+                </div>
+                <button onClick={generateBill} disabled={billing} className="bg-black text-white rounded-lg px-6 py-2.5 text-[10px] font-black tracking-widest uppercase hover:bg-gray-800 transition-colors disabled:opacity-50">
+                  {billing ? 'Generating…' : 'Generate Bill'}
+                </button>
+              </div>
+
+              {invoice && (
+                <div className="mt-10 border-t border-gray-100 pt-8">
+                  <div className="flex justify-between items-baseline mb-6">
+                    <p className="font-black text-lg">Invoice — {invoice.invoiceFor?.name}</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">{invoice.currency}</p>
+                  </div>
+                  <table className="w-full text-left text-sm mb-6">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-[10px] uppercase tracking-widest text-gray-400">
+                        <th className="py-2">Date</th><th className="py-2">Booking</th><th className="py-2 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.lineItems.map((li: any, i: number) => (
+                        <tr key={i} className="border-b border-gray-50">
+                          <td className="py-2">{li.date ? new Date(li.date).toLocaleDateString() : '—'}</td>
+                          <td className="py-2 text-gray-500">{String(li.bookingId).slice(-6)}</td>
+                          <td className="py-2 text-right">${li.amount.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      {invoice.lineItems.length === 0 && <tr><td colSpan={3} className="py-4 text-gray-400 italic">No settled bookings in this period.</td></tr>}
+                    </tbody>
+                  </table>
+                  <div className="flex flex-col items-end gap-1 text-sm">
+                    <p>Subtotal: <span className="font-bold">${invoice.subtotal.toLocaleString()}</span></p>
+                    <p>Tax ({Math.round(invoice.taxRate * 100)}%): <span className="font-bold">${invoice.taxAmount.toLocaleString()}</span></p>
+                    <p className="text-lg font-black">Total: ${invoice.total.toLocaleString()}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </Layout>

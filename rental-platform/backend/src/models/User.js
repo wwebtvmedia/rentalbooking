@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema({
   // Dedicated Encryption Key for this user
   userKey: { type: String, required: true },
 
+  // Engagement tracking (for per-user statistics).
+  loginCount: { type: Number, default: 0 },
+  lastLoginAt: { type: Date },
+
   metadata: {
     taxId: { type: String }, // Encrypted
     bankDetails: { type: String }, // Encrypted

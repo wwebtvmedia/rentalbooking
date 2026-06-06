@@ -6,7 +6,7 @@ import MagicToken from '../models/MagicToken.js';
 import { assertCanSendMagicLink, sendMagicLink } from '../auth/mailer.js';
 import jwt from 'jsonwebtoken';
 import { blindIndex, normalizeEmail, safeEqual } from '../lib/encryption.js';
-import { findOrCreateUser } from '../auth/users.js';
+import { findOrCreateUser, recordLogin } from '../auth/users.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -78,6 +78,7 @@ router.post('/login', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
     const result = await findOrCreateUser({ email, fullName: name, role: 'guest' });
+    await recordLogin(result.user);
     const token = createToken({ id: result.user._id.toString(), name: result.fullName, email: result.email, roles: [result.user.role] });
 
     res.json({ token, user: result.public });
@@ -166,6 +167,7 @@ router.post('/magic/verify', async (req, res) => {
 
     const roleToUse = PUBLIC_ROLES.has(payload.requestedRole) ? payload.requestedRole : 'guest';
     const result = await findOrCreateUser({ email, fullName: mt.fullName, role: roleToUse });
+    await recordLogin(result.user);
 
     const sessionToken = createToken({ id: result.user._id.toString(), name: result.fullName, email: result.email, roles: [result.user.role] }, '14d');
     logger.info({ forensicId, userId: result.user._id, role: result.user.role }, 'AUTH_VERIFY_REQUEST: Successful login');

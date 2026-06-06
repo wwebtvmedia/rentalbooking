@@ -220,8 +220,9 @@ Access-control matrix (verified):
 | `/seed`, `/seed/unprotected` | admin JWT / admin key | Seed demo inventory |
 | `/ucp/*` | discover public; register/checkout admin | Agentic commerce (UCP/1.0) |
 | `/payments/*` | bearer | Stripe intent + USDC recording |
-| `/admin/platform/*` | admin | Stats, customers, user deletion |
-| `/admin/host/dashboard`, `/admin/concierge/*` | role | Host / concierge dashboards |
+| `/reviews/*` | mixed | Double-moderated ratings & comments (flats + guests) — see §14b |
+| `/admin/platform/*` | admin | Stats, customers, user deletion; **`/guests`, `/hosts` intelligence, `/hosts/:id/invoice`** — see §14c |
+| `/admin/host/dashboard`, `/admin/host/invoice`, `/admin/concierge/*` | role | Host / concierge dashboards; **host bill (tax)** — see §14c |
 | `/mcp`, `/mcp/messages` | admin | MCP SSE transport |
 | `/webhooks/stripe` | signature | Stripe webhook |
 
@@ -242,7 +243,9 @@ input validation, and RBAC boundaries.
 - booking with a non-ObjectId identity returns a clean 4xx, never a 500;
 - `GET /version` reports build metadata;
 - uploads emit https URLs behind a proxy (no mixed content);
-- host self-service + moderation: submit → pending → admin validates → published.
+- host self-service + moderation: submit → pending → admin validates → published;
+- ratings & reviews: flat rating → guest confirm → moderator approve → host reply → guest rating (§14b);
+- statistics & billing: per-guest + per-host intelligence, automatic tax, host bill generation, and RBAC (§14c).
 
 **Remote** non-regression against the live Pi: `python3 rental-platform/scripts/remote_nonreg.py`
 (read-only by default; set `RENTAL_TOKEN` to include admin checks).
@@ -511,6 +514,29 @@ Every comment is **double-gated**: published only after **(1) the guest party co
 
 A review is `pending` until both `guestConfirmed` and `moderatorApproved` are true, then
 `published`. `GET /reviews` returns only published items plus `summary.averageRating`.
+
+---
+
+## 14c. Statistics, automatic tax & billing
+
+The admin dashboard now has a **by-guest** and a **by-host** intelligence view, and hosts get
+an **automatic tax** figure plus a one-click **bill (invoice) generator**.
+
+**Connections** are counted by `loginCount` on each user (incremented on every `/auth/login`
+and magic-link verify). **Automatic tax** uses `TAX_RATE` (a fraction, e.g. `0.20` = 20%;
+default 0.20) — see `.env.example`.
+
+| What | Endpoint | Who | Returns |
+| :-- | :-- | :-- | :-- |
+| Per-guest stats | `GET /admin/platform/guests` | admin | connections, rentals, `conciergeStays`, `totalSpent`, tips |
+| Per-host stats + auto tax | `GET /admin/platform/hosts` | admin | connections, `flatCount`, rentals, revenue, `automaticTax`, `netRevenue`, concierges, tips |
+| Host bill (with tax) | `GET /admin/platform/hosts/:id/invoice?from=&to=` | admin | invoice: `lineItems`, `subtotal`, `taxRate`, `taxAmount`, `total` |
+| Host dashboard (self) | `GET /admin/host/dashboard` | host | `summary.tips`, `summary.automaticTax`, `summary.netRevenue`, `summary.taxRate` |
+| Host bill (self) | `GET /admin/host/invoice?from=&to=` | host | same invoice shape as above |
+
+`from`/`to` are optional ISO dates bounding the bill period. Revenue/bill amounts come from
+**settled** (`paymentStatus: succeeded`) bookings; "rentals" counts all bookings. The host
+dashboard renders a date-range **Generate Bill** panel that prints the invoice with tax.
 
 ---
 
