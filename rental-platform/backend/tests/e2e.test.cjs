@@ -244,6 +244,20 @@ describe('E2E non-regression tests', () => {
     expect(dash.body.flats.some(f => f.id === res.body._id)).toBe(true);
   });
 
+  test('REGRESSION: uploads emit https URLs behind a proxy (no mixed content)', async () => {
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ sub: new mongoose.Types.ObjectId().toString(), email: 'proto@e2e.test', roles: ['host'] }, process.env.AUTH_JWT_SECRET, { expiresIn: '1h' });
+    const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+    // Cloudflare forwards the original scheme via X-Forwarded-Proto while the origin sees http.
+    const up = await request.post('/uploads')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Forwarded-Proto', 'https')
+      .send({ filename: 'x.png', b64: pngB64 })
+      .expect(200);
+    expect(up.body.url.startsWith('https://')).toBe(true);
+    expect(up.body.url).toContain('/uploads/');
+  });
+
   test('calendar filtering returns only apartment events', async () => {
     // create a booking for other apartment
     const start = new Date(Date.now() + 72*3600*1000).toISOString();

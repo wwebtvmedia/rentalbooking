@@ -31,8 +31,15 @@ function detectImage(buffer) {
 }
 
 function publicUploadUrl(req, filename) {
-  const origin = process.env.BACKEND_ORIGIN || `${req.protocol}://${req.get('host')}`;
-  return `${origin}/uploads/${filename}`;
+  if (process.env.BACKEND_ORIGIN) {
+    return `${process.env.BACKEND_ORIGIN.replace(/\/$/, '')}/uploads/${filename}`;
+  }
+  // Behind a TLS-terminating proxy (e.g. Cloudflare) req.protocol is "http", which would
+  // produce http:// URLs that browsers block as mixed content on the https site. Trust the
+  // forwarded scheme so uploaded photo URLs are https.
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const proto = forwardedProto || req.protocol || 'http';
+  return `${proto}://${req.get('host')}/uploads/${filename}`;
 }
 
 router.get('/:filename', async (req, res) => {
