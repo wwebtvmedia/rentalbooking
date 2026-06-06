@@ -17,6 +17,10 @@ build/
 .env
 .env.local
 .env.*.local
+# Local secret-bearing copies (save-env.sh / setup-env.sh / fix-mongo-uri.sh) — never commit
+.env_restore
+.env_restore.prev
+.env.bak-*
 
 # OS
 .DS_Store
