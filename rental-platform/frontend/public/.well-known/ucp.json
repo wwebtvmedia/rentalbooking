@@ -1,0 +1,19 @@
+{
+  "protocol": "UCP/1.0",
+  "merchant": "bestflats.vip",
+  "description": "Luxury short-stay residences, agent-bookable.",
+  "capabilities": ["rental-listing-v1"],
+  "endpoints": {
+    "catalog": "https://api.bestflats.vip/apartments",
+    "discovery": "https://api.bestflats.vip/ucp/discover?capabilityHash=rental-listing-v1",
+    "item": "https://api.bestflats.vip/ucp/item/{ucpId}",
+    "checkout": "https://api.bestflats.vip/ucp/checkout",
+    "health": "https://api.bestflats.vip/health"
+  },
+  "payment": {
+    "standard": "AP2",
+    "currency": "USDC",
+    "mandateField": "paymentMandateId"
+  },
+  "contact": "concierge@bestflats.vip"
+}

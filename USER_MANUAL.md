@@ -490,3 +490,88 @@ see only the flats/bookings assigned to them (RBAC scoping in the backend).
 | Edit / delete any flat | ⛔ | ⛔ | ✅ |
 | Platform stats / customers / remove members | ⛔ | ⛔ | ✅ |
 | Seed, UCP register/checkout, MCP | ⛔ | ⛔ | ✅ |
+
+---
+
+## 15. Agentic commerce (UCP / AP2) & making the site known to LLMs
+
+### 15.1 What UCP is here
+
+UCP (**Universal Commerce Protocol**) is how AI agents discover and transact on the platform.
+Each listing can be registered as a `UniversalCommerce` record that agents can find by a
+**capability hash** and check out using an **AP2** (Agent Payments Protocol) **payment
+mandate**, settled in **USDC**.
+
+Record shape (`UniversalCommerce`): `ucpMetadata{ capabilityHash, merchantOfRecord, isAgenticEnabled }`,
+`dynamicPricing{ baseRate, currency:"USDC", loyaltyDiscountEligible, priceValidUntil }`,
+`checkoutSession{ sessionId, paymentMandateId, status: OPEN|NEGOTIATING|LOCKED|COMPLETED|EXPIRED }`,
+`availabilityCalendar[]`.
+
+### 15.2 The UCP lifecycle
+
+| Step | Endpoint | Who | Notes |
+| :-- | :-- | :-- | :-- |
+| Register an item | `POST /ucp/register` | admin | `{ itemId, capabilityHash, baseRate }` → creates an OPEN record |
+| Discover inventory | `GET /ucp/discover?capabilityHash=…` | **public** | returns `{ protocol:"UCP/1.0", results:[…] }` (only OPEN sessions), with the apartment populated |
+| Inspect an item | `GET /ucp/item/:ucpId` | public | full record + apartment |
+| Agentic checkout | `POST /ucp/checkout` | admin/agent | `{ ucpId, paymentMandateId }` → locks the session for 15 min |
+
+```bash
+# Discover (the public entry point for agents):
+curl "https://api.bestflats.vip/ucp/discover?capabilityHash=rental-listing-v1"
+
+# Register a listing for UCP (admin):
+ADMIN=$(python3 gen_token.py "$AUTH_JWT_SECRET")
+curl -X POST https://api.bestflats.vip/ucp/register -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"itemId":"<apartmentId>","capabilityHash":"rental-listing-v1","baseRate":160}'
+
+# Agentic checkout with an AP2 payment mandate (admin/agent):
+curl -X POST https://api.bestflats.vip/ucp/checkout -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"ucpId":"<ucpRecordId>","paymentMandateId":"<ap2-mandate-id>"}'
+```
+CLI equivalents: `cli.py ucp discover|register|checkout` (see §3). The seed registers the
+demo inventory under `capabilityHash=rental-listing-v1`.
+
+> `ucpId` is the **UCP record `_id`** (from discover/register), not the apartment id, and the
+> session must be `OPEN`.
+
+### 15.3 MCP (tool access for agents)
+
+The backend also speaks **MCP** over SSE at `/mcp` (+ `/mcp/messages`). It is **admin-gated**
+today (`requireRole('admin')`), so connect with an admin JWT. To let external agents use MCP,
+either issue them a scoped token or front it with your own gateway — do **not** make `/mcp`
+public without auth (it is powerful).
+
+### 15.4 Making the page discoverable by LLMs / agents
+
+So that AI assistants and agent crawlers know and can transact with the site, the frontend
+serves (after a frontend deploy):
+
+| File / URL | Purpose |
+| :-- | :-- |
+| `https://www.bestflats.vip/robots.txt` | Allows AI crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, CCBot, …); links the sitemap, llms.txt and UCP discovery |
+| `https://www.bestflats.vip/llms.txt` | LLM-friendly summary of the site + the agent endpoints ([llms.txt standard](https://llmstxt.org)) |
+| `https://www.bestflats.vip/.well-known/ucp.json` | Machine-readable agent discovery manifest (protocol, endpoints, AP2/USDC payment) |
+| `https://www.bestflats.vip/sitemap.xml` | Public pages for search/AI indexing |
+| `https://api.bestflats.vip/ucp/discover?capabilityHash=rental-listing-v1` | The live agentic catalog |
+
+These are static files in `rental-platform/frontend/public/` — **deploy the frontend** for them
+to go live:
+```bash
+cd ~/sby/rentalbooking && git pull origin main
+cd rental-platform && podman-compose build frontend && podman-compose up -d frontend
+curl -s https://www.bestflats.vip/llms.txt          # sanity check
+curl -s https://www.bestflats.vip/.well-known/ucp.json
+```
+
+**To actively get LLMs to "know" the site:**
+1. Keep `robots.txt` allowing the AI bots above (already configured) so crawlers may index it.
+2. Submit `https://www.bestflats.vip/sitemap.xml` in Google Search Console / Bing Webmaster.
+3. Add **schema.org JSON-LD** (`Product`/`Offer`/`LodgingBusiness`) to listing pages so
+   search & AI extract structured data (recommended next step — not yet implemented).
+4. Publish the `.well-known/ucp.json` + UCP discovery URL in any agent directory / partner you
+   integrate with; agents follow the manifest to the live discovery endpoint.
+5. Note: indexing by third-party LLMs is **their** decision and timeline — you can invite and
+   enable it, but you cannot force a model to ingest the page.

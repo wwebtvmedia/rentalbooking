@@ -1,0 +1,25 @@
+# bestflats.vip
+
+> Luxury short-stay rental platform. Public residences are browsable and bookable
+> end-to-end, and are exposed to AI agents via the Universal Commerce Protocol
+> (UCP/1.0) with AP2 (Agent Payments Protocol) payment mandates, settled in USDC.
+
+## Public pages
+- [Home](https://www.bestflats.vip/)
+- [Collections (all residences)](https://www.bestflats.vip/collections)
+- [Residence detail](https://www.bestflats.vip/apartment?id=ID) — replace ID with an apartment id or slug
+- [Availability calendar](https://www.bestflats.vip/calendar?apartmentId=ID)
+
+## For AI agents (agentic commerce)
+- Catalog (JSON): https://api.bestflats.vip/apartments
+- UCP discovery (UCP/1.0): https://api.bestflats.vip/ucp/discover?capabilityHash=rental-listing-v1
+- UCP item detail: https://api.bestflats.vip/ucp/item/UCP_ID
+- Agentic checkout (AP2 mandate, admin/agent): POST https://api.bestflats.vip/ucp/checkout
+- Discovery manifest: https://www.bestflats.vip/.well-known/ucp.json
+- Service health: https://api.bestflats.vip/health
+
+## Notes
+- Listing data is public and machine-readable; prices are quoted in USDC for agent negotiation.
+- Creating bookings or completing checkout requires authentication (guest session) or an
+  AP2 payment mandate. Browsing and discovery do not.
+- Contact: concierge@bestflats.vip
