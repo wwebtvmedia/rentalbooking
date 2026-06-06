@@ -118,7 +118,7 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
-// Public version/health endpoint: confirms which code build is actually running.
+// Public version endpoint: confirms which code build is actually running.
 app.get('/version', (req, res) => {
   res.json({
     name: 'bestflats-backend',
@@ -128,6 +128,20 @@ app.get('/version', (req, res) => {
     startedAt: STARTED_AT,
     node: process.version,
     env: process.env.NODE_ENV || 'development',
+  });
+});
+
+// Health/liveness endpoint: reports DB connectivity so monitors / load balancers
+// (and the Pi's container restart policy) can detect a degraded backend.
+const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+app.get('/health', (req, res) => {
+  const state = mongoose.connection?.readyState ?? 0;
+  const dbUp = state === 1;
+  res.status(dbUp ? 200 : 503).json({
+    status: dbUp ? 'ok' : 'degraded',
+    db: DB_STATES[state] || 'unknown',
+    uptimeSeconds: Math.round(process.uptime()),
+    startedAt: STARTED_AT,
   });
 });
 
@@ -182,6 +196,17 @@ app.use((err, req, res, next) => {
   logger.error({ err, url: req.url, method: req.method }, "Unhandled error");
   const status = err.status || 500;
   res.status(status).json({ error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message });
+});
+
+// Resilience: never let a stray async error take the process down silently.
+// Log unhandled rejections; on a truly uncaught exception, log and exit so the
+// container's `restart: always` policy brings a clean instance back up.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason instanceof Error ? reason.stack || reason.message : String(reason) }, 'UNHANDLED_REJECTION');
+});
+process.on('uncaughtException', (err) => {
+  logger.error({ err: err.stack || err.message }, 'UNCAUGHT_EXCEPTION: exiting for clean restart');
+  process.exit(1);
 });
 
 app.listen(PORT, () => logger.info(`Backend running on port ${PORT}`));

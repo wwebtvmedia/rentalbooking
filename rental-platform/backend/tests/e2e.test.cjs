@@ -108,6 +108,13 @@ describe('E2E non-regression tests', () => {
     expect(res.body.node).toBe(process.version);
   });
 
+  test('GET /health reports database connectivity', async () => {
+    const res = await request.get('/health').expect(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.db).toBe('connected');
+    expect(typeof res.body.uptimeSeconds).toBe('number');
+  });
+
   test('setup test apartments', async () => {
     const res1 = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Apt E2E', pricePerNight: 100 }).expect(201);
     aptE2EId = res1.body._id;
@@ -212,6 +219,30 @@ describe('E2E non-regression tests', () => {
     const list = await request.get('/apartments').set('Authorization', `Bearer ${adminToken}`).expect(200);
     const found = list.body.some(a => a._id === res.body._id);
     expect(found).toBe(true);
+  });
+
+  test('example flat with an OPEN image: generate then remove (no committed photos)', async () => {
+    // Non-regression generates a throwaway, non-existent flat using an openly-licensed
+    // image URL (no real/committed photo), then removes it again afterwards.
+    // Image source — Unsplash, free to use under the Unsplash License (commercial &
+    // non-commercial, no permission/attribution needed): https://unsplash.com/license
+    // Photo: https://unsplash.com/photos/white-and-brown-sofa-set-1GxgJHFUbWk
+    const OPEN_IMAGE = 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&q=80';
+
+    const create = await request.post('/apartments').set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'NONREG Example Flat', address: 'Example St', pricePerNight: 123, photos: [OPEN_IMAGE], lat: 0, lon: 0 })
+      .expect(201);
+    const id = create.body._id;
+    expect(create.body.photos[0]).toBe(OPEN_IMAGE);
+
+    // visible while it exists
+    const listed = await request.get('/apartments').expect(200);
+    expect(listed.body.some(a => a._id === id)).toBe(true);
+
+    // cleanup: remove the tested flat afterwards
+    await request.delete(`/apartments/${id}`).set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const after = await request.get('/apartments').expect(200);
+    expect(after.body.some(a => a._id === id)).toBe(false);
   });
 
   test('host self-service + moderation: submit -> pending -> admin validates -> published', async () => {

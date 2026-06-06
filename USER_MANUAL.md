@@ -203,6 +203,7 @@ Access-control matrix (verified):
 | Mount | Auth | Purpose |
 | :-- | :-- | :-- |
 | `GET /version` | public | Running build: name, version, **commit**, builtAt, node, env |
+| `GET /health` | public | Liveness: DB connectivity (`200 ok` / `503 degraded`), uptime — for monitors |
 | `POST /auth/magic`, `/auth/magic/verify` | public | Magic-link login |
 | `POST /auth/login` | dev only | Quick guest login helper |
 | `GET /auth/me` | bearer | Current identity |
@@ -230,7 +231,7 @@ Access-control matrix (verified):
 cd rental-platform/backend
 npm test          # jest + in-memory Mongo; NODE_ENV=test, rate-limit disabled
 ```
-Current status: **26 tests / 4 suites, all green.** Coverage includes apartments,
+Current status: **28 tests / 4 suites, all green.** Coverage includes apartments,
 bookings (create/overlap/cancel/ownership), availability, calendar filtering, UCP
 discover→register→checkout→lock, payments intent stub, MCP SSE, mailer abuse limits,
 input validation, and RBAC boundaries.
@@ -299,7 +300,7 @@ Ethereal test inbox (preview URL is logged).
 | `start-local.sh` + `local-server.mjs` | Run the backend locally on the LAN IP (in-memory Mongo) |
 | `remote_nonreg.py` | Non-regression smoke against the live Pi (`BASE=…`, optional `RENTAL_TOKEN`) |
 | `propose_and_validate.py` | Classic host flow: email signup → submit → admin validates → published |
-| `import_bardo_prod.py` | Self-contained flat importer (admin token) for any environment |
+| `backup_mongo.sh` | **Database backup** (mongodump → rotated gzip archives) for cron on the Pi |
 
 ---
 
@@ -329,3 +330,34 @@ cd rental-platform && podman-compose build backend && podman-compose up -d backe
 curl -s https://api.bestflats.vip/version    # confirm the running commit
 ```
 `GET /version` reports the live commit so you can confirm the deploy landed.
+
+---
+
+## 13. Database protection & resilience
+
+**Database backups (`scripts/backup_mongo.sh`).** Dumps MongoDB to a rotated, gzip-compressed
+archive. Run on the Pi (where the `mongo` container lives), ideally from cron:
+```bash
+# manual
+bash rental-platform/scripts/backup_mongo.sh
+# cron — daily 03:30, keep 30 days, store on the USB disk:
+30 3 * * * KEEP=30 BACKUP_DIR=/mnt/usb/bfs-backups /bin/bash \
+  ~/sby/rentalbooking/rental-platform/scripts/backup_mongo.sh >> /mnt/usb/bfs-backups/backup.log 2>&1
+```
+Restore: `podman exec -i mongo mongorestore --archive --gzip --drop < <archive.gz>`.
+
+**Liveness / health (`GET /health`).** Returns `200 {status:"ok"}` when MongoDB is connected,
+`503 {status:"degraded"}` otherwise. Point an uptime monitor (or a Cloudflare health check) at
+`https://api.bestflats.vip/health` to get alerted on DB/backend trouble.
+
+**Process resilience.** The backend logs `unhandledRejection`s and, on a fatal
+`uncaughtException`, logs and exits so Podman's `restart: always` brings a clean instance
+back up. MongoDB connection uses retry-with-backoff (`connectWithRetry`).
+
+**Existing safeguards.** Mongo is not published on the host (internal compose network only);
+all requests are rate-limited (100 / 15 min per IP); per-user fields are AES-256-GCM encrypted;
+admin routes require a signed JWT; the admin dashboard adds a captcha after 3 failed sign-ins.
+
+**Recommended hardening (not yet automated):** off-Pi backup copy (e.g. `rclone` the archives
+to remote storage), and a MongoDB user/password (`MONGO_INITDB_*`) instead of the open internal
+connection.
