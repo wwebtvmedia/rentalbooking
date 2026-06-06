@@ -138,6 +138,28 @@ describe('E2E non-regression tests', () => {
     expect(hasBooking).toBe(true);
   });
 
+  test('REGRESSION: booking with a non-ObjectId identity returns a clean 4xx, never a 500', async () => {
+    // Agent/service tokens (e.g. the gen_token.py "remote-verify-bot" admin) carry a
+    // subject that is not a Mongo ObjectId. Previously this crashed booking creation with a
+    // 500 "Cast to ObjectId failed" because User.findById() received the raw string.
+    const jwt = require('jsonwebtoken');
+    const agentToken = jwt.sign(
+      { sub: 'remote-verify-bot', name: 'Verify Bot', email: 'verify-bot@bestflats.vip', roles: ['admin'] },
+      process.env.AUTH_JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    const start = new Date(Date.now() + 240 * 3600 * 1000).toISOString();
+    const end = new Date(Date.now() + 242 * 3600 * 1000).toISOString();
+    const res = await request
+      .post('/bookings')
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ apartmentId: aptE2EId, start, end });
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500); // must be a handled error, not a Cast 500
+    expect(res.body.error).toBeTruthy();
+  });
+
   test('overlapping booking should return 409', async () => {
     const start = new Date(Date.now() + 24*3600*1000).toISOString();
     const end = new Date(Date.now() + 26*3600*1000).toISOString();

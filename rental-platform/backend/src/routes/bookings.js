@@ -107,6 +107,12 @@ router.get('/:id', async (req, res) => {
 
 router.post("/", validate(bookingSchema), async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Token required to book a residence' });
+  // Agent/service tokens (e.g. the gen_token.py admin "remote-verify-bot") can carry a
+  // subject that is not a Mongo ObjectId. Such identities have no backing user document,
+  // so guard here instead of letting User.findById() throw a CastError (HTTP 500).
+  if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+    return res.status(403).json({ error: 'This account cannot create bookings' });
+  }
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
