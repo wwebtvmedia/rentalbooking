@@ -35,8 +35,17 @@ cd "$(dirname "$0")"
 
 ENV_FILE=".env"
 EXAMPLE="rental-platform/.env.example"
+CONTAINER="${MONGO_CONTAINER:-mongo}"
 FORCE=false
-[ "${1:-}" = "--force" ] && FORCE=true
+NO_AUTH=false
+for arg in "$@"; do
+    case "$arg" in
+        --force)   FORCE=true ;;
+        --no-auth) NO_AUTH=true ;;
+        -h|--help) echo "Usage: $0 [--force] [--no-auth]"; exit 0 ;;
+        *) echo "Unknown option: $arg" >&2; echo "Usage: $0 [--force] [--no-auth]" >&2; exit 1 ;;
+    esac
+done
 
 [ -f "$EXAMPLE" ] || { echo "❌ $EXAMPLE not found — run from the repo root." >&2; exit 1; }
 
@@ -72,7 +81,41 @@ urlencode() {
     fi
 }
 
-# Build MONGO_URI — with auth if a root username is provided, otherwise no-auth.
+# Reuse the root creds baked into an EXISTING mongo container, so .env matches the live
+# DB. Returns 1 if there's no usable container/creds (incl. the broken literal placeholder).
+recover_existing_mongo_creds() {
+    command -v podman >/dev/null 2>&1 || return 1
+    podman ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER" || return 1
+    local dump u p
+    dump="$(podman inspect "$CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || true)"
+    u="$(printf '%s\n' "$dump" | sed -n 's/^MONGO_INITDB_ROOT_USERNAME=//p' | head -1)"
+    p="$(printf '%s\n' "$dump" | sed -n 's/^MONGO_INITDB_ROOT_PASSWORD=//p' | head -1)"
+    case "$u" in ''|'${MONGO_ROOT_USERNAME:-}') return 1 ;; esac   # empty or the broken literal
+    [ -n "$p" ] || return 1
+    MONGO_ROOT_USERNAME="$u"; MONGO_ROOT_PASSWORD="$p"; return 0
+}
+
+# Decide Mongo credentials:
+#   • explicit MONGO_ROOT_USERNAME (env)          -> use it
+#   • --no-auth                                   -> no auth
+#   • an existing mongo container with real creds -> REUSE them (match the live DB)
+#   • otherwise (the mongo container does NOT exist) -> AUTO-GENERATE a secure user+password
+GENERATED=false
+if [ -n "${MONGO_ROOT_USERNAME:-}" ]; then
+    :
+elif [ "$NO_AUTH" = true ]; then
+    :
+elif recover_existing_mongo_creds; then
+    echo "🔁 Reusing existing Mongo root creds from container '$CONTAINER' (user '$MONGO_ROOT_USERNAME')."
+else
+    USR_RANDOM="$(printf '%04d' "$(( RANDOM % 10000 ))")"
+    MONGO_ROOT_USERNAME="bfs${USR_RANDOM}"
+    MONGO_ROOT_PASSWORD="$(head -c 256 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-12)"
+    GENERATED=true
+    echo "🔑 No mongo container found — generated fresh root creds (user '$MONGO_ROOT_USERNAME')."
+fi
+
+# Build MONGO_URI — with auth if a root username is set, otherwise no-auth.
 if [ -n "${MONGO_ROOT_USERNAME:-}" ]; then
     if [ -z "${MONGO_ROOT_PASSWORD:-}" ]; then
         read -rsp "MongoDB root password for '$MONGO_ROOT_USERNAME': " MONGO_ROOT_PASSWORD; echo
@@ -135,6 +178,11 @@ MASKED_URI="$(printf '%s' "$MONGO_URI" | sed -E 's#://[^@]*@#://***:***@#')"
 echo "✅ Wrote $ENV_FILE (mode 600)."
 echo "   MongoDB     : $AUTH_MODE — db '$MONGO_DB'"
 echo "   MONGO_URI   : $MASKED_URI"
+if [ "${GENERATED:-false}" = true ]; then
+    echo "   ⚠️  RECORD THESE generated Mongo credentials (also saved in .env):"
+    echo "        user: $MONGO_ROOT_USERNAME"
+    echo "        pass: $MONGO_ROOT_PASSWORD"
+fi
 echo "   Secrets     : AUTH_JWT_SECRET, MASTER_ENCRYPTION_KEY, PLATFORM_ADMIN_KEY ${AUTH_JWT_SECRET:+set}"
 echo "   TAX_RATE    : $TAX_RATE"
 echo
