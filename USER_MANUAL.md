@@ -35,6 +35,8 @@ python3 gen_token.py "$(grep '^AUTH_JWT_SECRET=' .env | cut -d= -f2-)"
 
 > The token is bearer credential — anyone holding it is admin. Don't commit it or paste it into shared docs. Mint a fresh one when needed; they're cheap.
 
+👉 For the **full URL map** and a walkthrough of what **guests, hosts, and admins** each do, see **§14**.
+
 ---
 
 ## 1. The two "magic keys" (important)
@@ -387,3 +389,104 @@ root user + access control.
   ```
   `backup_mongo.sh` and `mongorestore` also accept the credentials (auto-detected from
   `MONGO_ROOT_USERNAME`/`PASSWORD`).
+
+---
+
+## 14. URL map & role-based interactions
+
+### 14.1 All URLs
+
+**Frontend pages** (prod base `https://www.bestflats.vip`):
+
+| URL | Audience | Purpose |
+| :-- | :-- | :-- |
+| `/` | everyone | Landing + email sign-in (magic link); detects role from subdomain |
+| `/collections` | guest | Browse all published residences |
+| `/apartment?id=<id|slug>` | guest | Residence detail + photos |
+| `/calendar?apartmentId=<id>` | guest | Availability calendar / pick dates |
+| `/magic-request`, `/magic-callback` | everyone | Request a sign-in link / land after clicking it |
+| `/payments/[bookingId]` | guest | Checkout — card (Stripe) or USDC (MetaMask) |
+| `/owners` | host | "List your property" entry point |
+| `/host/dashboard` | host | Revenue, tax estimate, managed flats, recent guests |
+| `/concierge`, `/concierge/dashboard` | concierge | Work calendar, contractor directory |
+| `/admin` | admin | Manage **all** flats (create/edit/delete, upload photos) |
+| `/admin/dashboard` | admin | Platform intelligence (revenue, flats, customers, bookings) |
+| `/help` `/journal` `/story` `/team` `/vision` `/safety` `/privacy` `/terms` `/cancellation` | everyone | Content & legal |
+
+**Sign-in subdomains** (the subdomain sets the requested role at magic-link time):
+
+| Subdomain | Role requested |
+| :-- | :-- |
+| `www.bestflats.vip` | guest |
+| `host.bestflats.vip` | host |
+| `conci.bestflats.vip` | concierge |
+| `subcont.bestflats.vip` | contractor |
+
+**API** (prod base `https://api.bestflats.vip`): see §6 for the full table. Public health/version:
+`GET /health`, `GET /version`.
+
+### 14.2 Guest (traveller)
+
+1. **Browse** `/` → `/collections` → `/apartment?id=…` (public `GET /apartments`).
+2. **Sign in** — enter email on the landing page → receives a magic-link email →
+   clicking it hits `/magic-callback` which calls `POST /auth/magic/verify` → a 14-day
+   guest session (`role: guest`).
+3. **Book** — pick dates on the apartment/calendar → `POST /bookings`
+   (`{ apartmentId, start, end }`). If the flat has a deposit, continue to
+   `/payments/<bookingId>` → `POST /payments/create-intent` (card) or record a USDC payment.
+4. **Manage** — view own bookings (`GET /bookings`), cancel (`POST /bookings/:id/cancel`).
+   Guests only ever see/cancel **their own** bookings.
+- API used: `/auth/magic`, `/auth/magic/verify`, `/apartments`, `/bookings`, `/payments/*`.
+
+### 14.3 Host (property owner)
+
+1. **Sign in as host** — go to `host.bestflats.vip` (or `/owners`) and request a link;
+   the magic link grants a `host` session. (In production, staff roles can require an
+   invite code — `HOST_INVITE_CODE`.)
+2. **Dashboard** `/host/dashboard` → `GET /admin/host/dashboard`: revenue, monthly/yearly
+   breakdown, tax estimate, managed flats, recent guests (only for flats they own).
+3. **Propose a flat** (self-service, moderated):
+   - Upload photos → `POST /uploads` (hosts are allowed; URLs come back https).
+   - Submit → `POST /admin/host/flats` (`{ name, address, pricePerNight, photos, … }`).
+     The flat is created **`pending`** (hidden from Book Now) and the **admin is emailed a
+     validation link**. Ownership is forced to the signed-in host.
+   - Track own flats (incl. pending) → `GET /admin/host/flats`.
+4. **Goes live** once an admin approves (see 14.4). A host cannot publish their own flat.
+- API used: `/auth/magic` (role host), `/uploads`, `/admin/host/flats`, `/admin/host/dashboard`.
+
+### 14.4 Admin (platform operator)
+
+**Authenticate** by minting an admin JWT (`gen_token.py "$AUTH_JWT_SECRET"`) — see §0.
+
+1. **Flat management** `/admin` — create/edit/delete **any** flat, upload photos. Admin-created
+   flats are published immediately. Admins see **all** flats including `pending`/host-posted
+   ones (`GET /apartments` with an admin token returns everything).
+2. **Approve host submissions** — open the **"✓ Approve & publish"** link from the validation
+   email → `GET /admin/host/flats/validate?token=…` flips the flat to `published`.
+3. **Intelligence dashboard** `/admin/dashboard` — revenue, flat count, customers, recent
+   bookings (`GET /admin/platform/stats`); view/remove members
+   (`GET /admin/platform/customers`, `DELETE /admin/platform/users/:id`). Sign-in box requires
+   the admin token; a captcha appears after 3 failed attempts.
+4. **Other admin powers** — seed inventory (`/seed`, or `/seed/unprotected` with the
+   `x-platform-admin-key`), register/checkout UCP items, open MCP sessions (`/mcp`).
+- API used: everything under `/admin/platform/*`, `/admin/host/flats/validate`, `/apartments`
+  (write), `/uploads`, `/seed`, `/ucp/*`, `/mcp`.
+
+### 14.5 Concierge / Contractor (brief)
+
+Sign in via `conci.` / `subcont.` subdomains. Concierges use `/concierge/dashboard`
+(`GET /admin/concierge/*`) for service scheduling and the contractor directory. These roles
+see only the flats/bookings assigned to them (RBAC scoping in the backend).
+
+### 14.6 Who-can-do-what (summary)
+
+| Action | Guest | Host | Admin |
+| :-- | :--: | :--: | :--: |
+| Browse published flats / book / pay | ✅ | ✅ | ✅ |
+| See own bookings only | ✅ | (own flats' bookings) | all |
+| Upload photos | ⛔ | ✅ | ✅ |
+| Submit a flat (→ pending) | ⛔ | ✅ | ✅ (publishes directly) |
+| Publish / approve a flat | ⛔ | ⛔ | ✅ |
+| Edit / delete any flat | ⛔ | ⛔ | ✅ |
+| Platform stats / customers / remove members | ⛔ | ⛔ | ✅ |
+| Seed, UCP register/checkout, MCP | ⛔ | ⛔ | ✅ |
