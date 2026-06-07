@@ -15,6 +15,13 @@ export default function PlatformDashboard() {
   const [captcha, setCaptcha] = useState<{ a: number; b: number } | null>(null);
   const [captchaInput, setCaptchaInput] = useState('');
 
+  // "Switch to admin" — request an admin sign-in link by email (gated by ADMIN_INVITE_CODE).
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminCode, setAdminCode] = useState('');
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
+  const [linkMsg, setLinkMsg] = useState('');
+
   // Brute-force deterrent: after 3 failed sign-in attempts, require a captcha.
   const CAPTCHA_AFTER = 3;
   const newCaptcha = () => setCaptcha({ a: 1 + Math.floor(Math.random() * 9), b: 1 + Math.floor(Math.random() * 9) });
@@ -70,6 +77,29 @@ export default function PlatformDashboard() {
     setTokenInput('');
     setCaptchaInput('');
     fetchData({ countFailure: true });
+  };
+
+  // Send an admin sign-in link to the given email. Requires the admin invite code.
+  // After clicking the emailed link, the magic-callback stores an admin session
+  // token in this browser, so the dashboard (and /admin) then work without pasting.
+  const requestAdminLink = async () => {
+    if (!adminEmail.trim()) { setLinkMsg('Enter your email address.'); return; }
+    setSendingLink(true);
+    setLinkMsg('');
+    try {
+      const base = API_BASE_URL;
+      await axios.post(`${base}/auth/magic`, {
+        email: adminEmail.trim(),
+        role: 'admin',
+        inviteCode: adminCode.trim(),
+        redirectUrl: window.location.origin + '/magic-callback',
+      });
+      setLinkSent(true);
+    } catch (err: any) {
+      setLinkMsg(err.response?.data?.error || err.message || 'Could not send the admin sign-in link.');
+    } finally {
+      setSendingLink(false);
+    }
   };
 
   const logout = () => {
@@ -149,8 +179,55 @@ export default function PlatformDashboard() {
           {failCount > 0 && failCount < CAPTCHA_AFTER && (
             <p className="text-amber-600 text-[11px] mt-2">{CAPTCHA_AFTER - failCount} attempt(s) left before verification is required.</p>
           )}
+
+          {/* Switch to admin: receive a sign-in link by email instead of pasting a token. */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+            <div className="relative flex justify-center"><span className="bg-white px-3 text-[9px] font-black uppercase tracking-widest text-gray-400">or</span></div>
+          </div>
+
+          {linkSent ? (
+            <div className="text-center p-4 bg-green-50 border border-green-100 rounded-lg">
+              <p className="text-sm font-bold text-green-800 mb-1">Check your email</p>
+              <p className="text-[11px] text-green-700 leading-relaxed">
+                We sent an admin sign-in link to <span className="font-medium">{adminEmail}</span>. Open it to sign in — you'll
+                return here with admin access already active.
+              </p>
+              <button onClick={() => { setLinkSent(false); setAdminCode(''); }} className="text-[10px] font-black uppercase tracking-widest text-gray-500 mt-3 underline">
+                Use a different email
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Switch to admin by email</p>
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-gold"
+              />
+              <input
+                type="password"
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') requestAdminLink(); }}
+                placeholder="Admin invite code"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-gold"
+              />
+              <button
+                onClick={requestAdminLink}
+                disabled={sendingLink}
+                className="w-full border border-black text-black rounded-lg py-3 text-[10px] font-black tracking-widest uppercase hover:bg-black hover:text-white transition-colors disabled:opacity-50"
+              >
+                {sendingLink ? 'Sending…' : 'Email me an admin sign-in link'}
+              </button>
+              {linkMsg && <p className="text-red-600 text-[11px] mt-3">{linkMsg}</p>}
+            </div>
+          )}
+
           <p className="text-[10px] text-gray-400 mt-6 leading-relaxed">
-            Mint a token on the server with <code>gen_token.py</code> using <code>AUTH_JWT_SECRET</code>. It is stored only in this browser.
+            Or mint a token on the server with <code>gen_token.py</code> using <code>AUTH_JWT_SECRET</code>. Tokens are stored only in this browser.
           </p>
         </div>
       </div>

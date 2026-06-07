@@ -11,12 +11,14 @@ import { findOrCreateUser, recordLogin } from '../auth/users.js';
 const router = express.Router();
 router.use(authMiddleware);
 
-const PUBLIC_ROLES = new Set(['guest', 'host', 'concierge', 'contractor']);
-if (process.env.NODE_ENV === 'test') PUBLIC_ROLES.add('admin');
+const PUBLIC_ROLES = new Set(['guest', 'host', 'concierge', 'contractor', 'admin']);
 const STAFF_ROLE_ENV = {
   host: 'HOST_INVITE_CODE',
   concierge: 'CONCIERGE_INVITE_CODE',
-  contractor: 'CONTRACTOR_INVITE_CODE'
+  contractor: 'CONTRACTOR_INVITE_CODE',
+  // Admin sign-in by email is gated by a secret invite code. If ADMIN_INVITE_CODE
+  // is unset, admin magic links are rejected (safe default — no open escalation).
+  admin: 'ADMIN_INVITE_CODE'
 };
 
 function configuredFrontendOrigins() {
@@ -131,7 +133,14 @@ router.post('/magic', async (req, res) => {
       await sendMagicLink(email, link);
     } catch (mailErr) {
       await MagicToken.deleteOne({ jti });
-      throw mailErr;
+      // Log the real cause (e.g. SMTP "535 Authentication failed") for operators,
+      // but never surface nodemailer's raw "Invalid login: ..." to the client —
+      // users read it as *their* login being invalid, when it's our mail server
+      // rejecting our SMTP credentials.
+      logger.error({ forensicId, emailHash, err: mailErr.message }, 'AUTH_MAGIC_REQUEST: Mail dispatch failed');
+      const cleanError = new Error('Could not send the sign-in email right now. Please try again in a few minutes.');
+      cleanError.status = 502;
+      throw cleanError;
     }
 
     logger.info({ forensicId, emailHash }, 'AUTH_MAGIC_REQUEST: Link sent successfully');

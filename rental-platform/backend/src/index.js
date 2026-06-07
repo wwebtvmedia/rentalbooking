@@ -210,6 +210,13 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-app.listen(PORT, () => logger.info(`Backend running on port ${PORT}`));
+// Only bind a port when started directly (node src/index.js — container CMD,
+// npm start, or the e2e child process). When the app is imported by a test
+// (supertest), skip listen so no stray server handle keeps Jest alive after the
+// suite finishes — that open handle was making the full `npm test` run hang.
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMainModule) {
+  app.listen(PORT, () => logger.info(`Backend running on port ${PORT}`));
+}
 
 export default app;

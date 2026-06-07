@@ -52,6 +52,15 @@ class RentalCLI:
                 return f.read().strip()
         return None
 
+    def _clear_token(self):
+        """Destroy the local session: remove the cached token and drop the auth header."""
+        existed = os.path.exists(TOKEN_FILE)
+        if existed:
+            os.remove(TOKEN_FILE)
+        self.token = None
+        self.session.headers.pop("Authorization", None)
+        return existed
+
     def _handle_response(self, response):
         try:
             response.raise_for_status()
@@ -73,18 +82,26 @@ class RentalCLI:
 
     # Auth
     def login(self, email, role="guest", name="CLI User", invite_code=None):
+        # Start every login from a clean slate so a failed/partial login never
+        # leaves a stale token behind (which would make later calls look like the
+        # wrong user is still signed in).
+        self._clear_token()
         print(f"Requesting magic link for {email} ({role})...")
         payload = {"email": email, "role": role, "fullName": name}
         if invite_code:
             payload["inviteCode"] = invite_code
         res = self.session.post(f"{self.base_url}/auth/magic", json=payload)
         data = self._handle_response(res)
-        
+
         if "token" in data:
             print("Received magic token (Test Mode). Verifying...")
             return self.verify_token(data["token"])
         else:
-            print(data.get("message", "Magic link sent. Please verify the token manually."))
+            # Production: the link is emailed, no token comes back over the API.
+            print(data.get("message", "Magic link sent."))
+            print("Check the inbox for the sign-in link, then run:")
+            print("    python cli.py auth verify <TOKEN_FROM_LINK>")
+            print("(The token is the ?token=... value in the magic-callback URL.)")
             return None
 
     def verify_token(self, token):
@@ -93,6 +110,26 @@ class RentalCLI:
         self._save_token(data["token"])
         print(f"Successfully logged in as {data['user']['fullName']} ({data['user']['role']})")
         return data
+
+    def logout(self):
+        """Destroy the local session token."""
+        if self._clear_token():
+            print(f"Logged out. Removed {TOKEN_FILE}.")
+        else:
+            print("No active session to log out from.")
+
+    def status(self):
+        """Show whether a session token is cached and whether it is still valid."""
+        if not self.token:
+            print("Not logged in (no cached token).")
+            return
+        res = self.session.get(f"{self.base_url}/auth/me")
+        if res.status_code == 200:
+            me = res.json()
+            roles = ", ".join(me.get("roles", [])) or "(none)"
+            print(f"Logged in as {me.get('email')} (roles: {roles})")
+        else:
+            print(f"Cached token is no longer valid (HTTP {res.status_code}). Run 'auth logout' then log in again.")
 
     def me(self):
         res = self.session.get(f"{self.base_url}/auth/me")
@@ -170,8 +207,10 @@ def main():
     
     verify_p = auth_sub.add_parser("verify", help="Verify magic token")
     verify_p.add_argument("token", help="The token from magic link")
-    
+
     auth_sub.add_parser("me", help="Get current user info")
+    auth_sub.add_parser("logout", help="Destroy the local session (clear cached token)")
+    auth_sub.add_parser("status", help="Show current login status and token validity")
 
     # Apt
     apt_parser = subparsers.add_parser("apt", help="Apartment Management")
@@ -245,6 +284,10 @@ def main():
             cli.verify_token(args.token)
         elif args.subcommand == "me":
             print(json.dumps(cli.me(), indent=2))
+        elif args.subcommand == "logout":
+            cli.logout()
+        elif args.subcommand == "status":
+            cli.status()
             
     elif args.command == "apt":
         if args.subcommand == "list":
