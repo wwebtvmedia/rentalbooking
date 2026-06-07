@@ -12,6 +12,49 @@ export default function HostDashboard() {
   const [invoice, setInvoice] = useState<any>(null);
   const [billing, setBilling] = useState(false);
 
+  // Host self-service: propose a new property. It stays hidden until an admin
+  // approves it via the validation email, so we surface each flat's status here.
+  const [myFlats, setMyFlats] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [flatForm, setFlatForm] = useState<any>({ name: '', description: '', pricePerNight: '', depositAmount: '', address: '', photos: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMsg, setSubmitMsg] = useState('');
+
+  const loadMyFlats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/admin/host/flats`, { headers: { Authorization: `Bearer ${token}` } });
+      setMyFlats(res.data);
+    } catch { /* non-fatal: the metrics view still works */ }
+  };
+
+  const submitFlat = async () => {
+    if (!flatForm.name.trim()) { setSubmitMsg('Property name is required.'); return; }
+    setSubmitting(true);
+    setSubmitMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const photos = String(flatForm.photos).split(',').map((s: string) => s.trim()).filter(Boolean);
+      const body = {
+        name: flatForm.name.trim(),
+        description: flatForm.description,
+        address: flatForm.address,
+        photos,
+        pricePerNight: flatForm.pricePerNight ? Number(flatForm.pricePerNight) : undefined,
+        depositAmount: flatForm.depositAmount ? Number(flatForm.depositAmount) : undefined,
+      };
+      await axios.post(`${API_BASE_URL}/admin/host/flats`, body, { headers: { Authorization: `Bearer ${token}` } });
+      setSubmitMsg('✓ Submitted. An admin must approve it via the emailed link before it appears on Book Now.');
+      setFlatForm({ name: '', description: '', pricePerNight: '', depositAmount: '', address: '', photos: '' });
+      setShowForm(false);
+      loadMyFlats();
+    } catch (err: any) {
+      setSubmitMsg(err.response?.data?.error || err.message || 'Submission failed.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const generateBill = async () => {
     try {
       setBilling(true);
@@ -37,6 +80,7 @@ export default function HostDashboard() {
         const base = API_BASE_URL;
         const res = await axios.get(`${base}/admin/host/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
         setData(res.data);
+        loadMyFlats();
       } catch (err: any) {
         setError(err.response?.data?.error || 'Access Denied');
       } finally {
@@ -53,10 +97,82 @@ export default function HostDashboard() {
     <Layout title="Host Management | bestflats.vip">
       <div className="bg-gray-50 min-h-screen py-20">
         <div className="container">
-          <header className="mb-16">
-            <span className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-4 inline-block">Partner Dashboard</span>
-            <h1 className="text-4xl font-black">Host Analytics.</h1>
+          <header className="mb-12 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <span className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-4 inline-block">Partner Dashboard</span>
+              <h1 className="text-4xl font-black">Host Analytics.</h1>
+            </div>
+            <button
+              onClick={() => { setShowForm(v => !v); setSubmitMsg(''); }}
+              className="bg-gold text-white rounded-lg px-6 py-3 text-[10px] font-black tracking-widest uppercase hover:opacity-90 transition-opacity"
+            >
+              {showForm ? 'Close' : '+ Add a property'}
+            </button>
           </header>
+
+          {/* Host self-service: submit a property for admin approval. */}
+          <section className="mb-16">
+            {showForm && (
+              <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 mb-8">
+                <h2 className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Submit a new property</h2>
+                <p className="text-xs text-gray-500 mb-6">It stays hidden from Book Now until an admin approves it via the validation email we send them.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Property name *</label>
+                    <input value={flatForm.name} onChange={e => setFlatForm({ ...flatForm, name: e.target.value })} placeholder="Seaside Villa" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Address</label>
+                    <input value={flatForm.address} onChange={e => setFlatForm({ ...flatForm, address: e.target.value })} placeholder="12 Rue de la Mer, Nice" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Price per night ($)</label>
+                    <input type="number" value={flatForm.pricePerNight} onChange={e => setFlatForm({ ...flatForm, pricePerNight: e.target.value })} placeholder="180" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Guarantee deposit ($)</label>
+                    <input type="number" value={flatForm.depositAmount} onChange={e => setFlatForm({ ...flatForm, depositAmount: e.target.value })} placeholder="500" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Description</label>
+                    <textarea value={flatForm.description} onChange={e => setFlatForm({ ...flatForm, description: e.target.value })} placeholder="Full description…" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm h-24 focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-2">Photo URLs (comma-separated)</label>
+                    <input value={flatForm.photos} onChange={e => setFlatForm({ ...flatForm, photos: e.target.value })} placeholder="https://… , https://…" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  </div>
+                </div>
+                <div className="mt-6 flex items-center gap-4">
+                  <button onClick={submitFlat} disabled={submitting} className="bg-black text-white rounded-lg px-6 py-2.5 text-[10px] font-black tracking-widest uppercase hover:bg-gray-800 transition-colors disabled:opacity-50">
+                    {submitting ? 'Submitting…' : 'Submit for approval'}
+                  </button>
+                  {submitMsg && <p className={`text-[11px] ${submitMsg.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>{submitMsg}</p>}
+                </div>
+              </div>
+            )}
+            {!showForm && submitMsg && <p className="text-green-600 text-sm mb-6">{submitMsg}</p>}
+
+            {myFlats.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
+                <h2 className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-6">My properties</h2>
+                <div className="space-y-3">
+                  {myFlats.map((f: any) => (
+                    <div key={f._id} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                      <div>
+                        <p className="font-bold text-sm">{f.name}</p>
+                        <p className="text-[9px] text-gray-400 uppercase tracking-widest">{f.address || 'No address'}</p>
+                      </div>
+                      {f.status === 'pending' ? (
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-3 py-1 rounded-full">Pending review</span>
+                      ) : (
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-green-50 text-green-600 px-3 py-1 rounded-full">Live</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-16">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
